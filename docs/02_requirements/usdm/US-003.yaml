@@ -1,0 +1,21 @@
+id: US-003
+title: ツール自動装備・交換
+persona: 建築メインのプレイヤー
+story: |-
+  プレイヤーとして、Botにツルハシを投げ渡すだけで自動的に装備し、
+  さらに耐久切れ時には予備ツールへ交換してほしい。
+  これにより採掘を止めずに済む。
+acceptance_criteria:
+  - |-
+    Scenario: Auto equip tool when given
+      Given Botが召喚されている
+      And プレイヤーがBotにツルハシを投げている
+      When Botがツルハシを拾う
+      Then Botがツールスロットに自動装備する
+  - |-
+    Scenario: Auto swap broken tool
+      Given Botが採掘中
+      And Botの装備ツール耐久が0
+      And Botのインベントリに予備ツルハシがある
+      Then Botが予備ツールに自動交換し採掘を継続する
+notes: ""

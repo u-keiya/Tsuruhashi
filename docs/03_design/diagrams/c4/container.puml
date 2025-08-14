@@ -1,0 +1,33 @@
+@startuml C4-Container
+' ============================================================
+' C4 Container Diagram : Minecraft Bedrock Bot Framework
+' USDM: US-001 US-002 US-003 US-004
+' ============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(player, "建築メインのプレイヤー")
+Person(admin, "統合版サーバー管理者")
+System(bedrockServer, "Minecraft Bedrock Server", "サーバー本体")
+System_Ext(mojang, "Mojang Auth", "Xbox Live 認証")
+
+System_Boundary(bf, "Bot Framework") {
+  Container(botCore, "Bot Core Service", "Node.js", "Bedrockプロトコル制御・採掘AI")
+  Container(controlAPI, "Control API", "gRPC / REST", "Bot制御エンドポイント")
+  Container(cliPlugin, "CLI / Plugin", "PowerShell / Behavior Pack", "サーバー管理者用コマンド")
+  Container(webUI, "Web UI (オプション)", "React", "Bot状況ダッシュボード")
+  ContainerDb(stateDB, "State Store", "SQLite / LevelDB", "Bot状態・統計を保持")
+}
+
+Rel(admin, cliPlugin, "/summonbot, /setarea など")
+Rel(admin, webUI, "ブラウザで監視・制御")
+Rel(cliPlugin, controlAPI, "Invoke API", "gRPC")
+Rel(webUI, controlAPI, "Invoke API", "HTTPS (REST)")
+Rel(controlAPI, botCore, "Command + Query")
+Rel(botCore, bedrockServer, "Bedrockプロトコル(UDP)")
+Rel(bedrockServer, mojang, "Auth API", "HTTPS")
+Rel(botCore, stateDB, "Read/Write")
+Rel(webUI, stateDB, "読み取り", "SQL")
+
+SHOW_LEGEND()
+@enduml

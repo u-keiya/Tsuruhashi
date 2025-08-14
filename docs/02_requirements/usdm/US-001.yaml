@@ -1,0 +1,68 @@
+id: US-001
+title: 放置採掘の実現
+persona: 建築メインのプレイヤー
+story: |-
+  建築メインのプレイヤーとして、指定した範囲を自動で採掘してくれるBotが欲しい。そうすれば自分は建築だけに集中できる。
+acceptance_criteria:
+  - |-
+    Scenario: Bot performs unattended mining
+      Given プレイヤーがBotを召喚し採掘範囲を指定している
+      When Botが採掘を開始する
+      Then 指定範囲のブロックが自動で採掘され、プレイヤーは操作不要である
+children:
+  - id: US-001-1
+    title: Bot召喚コマンド
+    persona: 建築メインのプレイヤー
+    story: |-
+      プレイヤーとして、/summonbot コマンド一つでBotを召喚したい。
+    acceptance_criteria:
+      - |-
+        Scenario: Summon bot via command
+          Given プレイヤーがゲーム内で権限を持つ
+          When /summonbot を入力する
+          Then Botがプレイヤーの位置にスポーンする
+  - id: US-001-2
+    title: 採掘範囲指定
+    persona: 建築メインのプレイヤー
+    story: |-
+      プレイヤーとして、始点(XYZ)と終点(XYZ)座標を入力して採掘範囲を指定したい。
+    acceptance_criteria:
+      - |-
+        Scenario: Set mining area by coordinates
+          Given Botが召喚されている
+          When /setarea x1 y1 z1 x2 y2 z2 を入力する
+          Then Botが範囲を確認し採掘準備を開始する
+  - id: US-001-3
+    title: Botの自動移動
+    persona: 建築メインのプレイヤー
+    story: |-
+      Botは指定範囲まで自動で移動してほしい。
+    acceptance_criteria:
+      - |-
+        Scenario: Bot auto moves to area
+          Given 採掘範囲が設定されている
+          When Botが待機状態
+          Then Botが最短経路で範囲へ移動する
+  - id: US-001-4
+    title: Botの自動採掘
+    persona: 建築メインのプレイヤー
+    story: |-
+      Botは範囲内のブロックを自動で採掘してほしい。
+    acceptance_criteria:
+      - |-
+        Scenario: Bot auto mines area
+          Given Botが範囲に到達している
+          When 採掘を開始
+          Then Botが範囲をブロック単位で採掘する
+  - id: US-001-5
+    title: ツール耐久切れで停止
+    persona: 建築メインのプレイヤー
+    story: |-
+      Botはツール耐久が0になったら採掘を停止してほしい。
+    acceptance_criteria:
+      - |-
+        Scenario: Stop when tool breaks
+          Given Botが採掘中
+          And Botのツール耐久が0
+          Then Botが採掘を停止しチャットで通知する
+notes: ''

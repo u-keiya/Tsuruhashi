@@ -1,0 +1,34 @@
+@startuml C4-Component-BotCore
+' =============================================================
+' C4 Component Diagram : Bot Core Service
+' USDM: US-001 US-002 US-003 US-004
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+System(bedrockServer, "Minecraft Bedrock Server")
+Container(controlAPI, "Control API", "gRPC / REST")
+ContainerDb(stateDB, "State Store", "SQLite")
+
+Boundary(botCore, "Bot Core Service (Node.js)") {
+  Component(miningEngine, "MiningEngine", "TypeScript", "ブロック採掘アルゴリズムを実行")
+  Component(pathFinder, "PathFinder", "TypeScript", "座標→経路計算 (A*)")
+  Component(toolManager, "ToolManager", "TypeScript", "ツール装備・耐久監視・交換", $US-003)
+  Component(progressReporter, "ProgressReporter", "TypeScript", "採掘進捗計算")
+  Component(chatReporter, "ChatReporter", "TypeScript", "5分毎に進捗チャット送信 (固定)", $US-004)
+  Component(stateAdapter, "StateAdapter", "TypeScript", "Bot状態を SQLite に永続化")
+}
+
+Rel(controlAPI, miningEngine, "Command: startMining(range)")
+Rel(miningEngine, pathFinder, "経路要求")
+Rel(miningEngine, toolManager, "ツール使用/耐久通知")
+Rel(toolManager, miningEngine, "交換完了通知")
+Rel(miningEngine, progressReporter, "進捗更新")
+Rel(progressReporter, chatReporter, "メトリクス送信 / publish")
+Rel(chatReporter, bedrockServer, "Chat Packet (UDP)", "Fixed 5min interval")
+Rel(stateAdapter, stateDB, "Read/Write", "SQL")
+Rel_U(miningEngine, stateAdapter, "状態保存")
+Rel_U(toolManager, stateAdapter, "ツール統計保存")
+
+SHOW_LEGEND()
+@enduml

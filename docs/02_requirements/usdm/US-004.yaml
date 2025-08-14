@@ -1,0 +1,18 @@
+id: US-004
+title: 採掘進捗のチャット可視化
+persona: 統合版サーバー管理者
+story: |-
+  サーバー管理者として、Botが5分ごとに採掘進捗と
+  手持ちツールの残耐久・残数をゲーム内チャットで報告してほしい。
+  これにより採掘状況とツール消費状況を簡単に把握できる。
+acceptance_criteria:
+  - |-
+    Scenario: Periodic progress & tool status reporting
+      Given Botが採掘中
+      When 採掘開始から10分経過する
+      Then Botが以下フォーマットでチャットへ送信する
+        """
+        【進捗】{progress}%  (Y={current}/{target})
+        【ツール】残り耐久値 {durability}/{max_durability} ・残りツール数 {tool_count}個
+        """
+notes: ""

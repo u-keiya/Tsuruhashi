@@ -1,0 +1,29 @@
+@startuml C4-Context
+' ============================================================
+' C4 Context Diagram : Minecraft Bedrock Bot Framework
+' USDM: US-001 US-002 US-003 US-004
+' ============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(player, "建築メインのプレイヤー", "範囲指定・コマンド操作でBotを利用")
+Person(admin, "統合版サーバー管理者", "Botフレームワーク導入・複数Bot管理")
+System_Ext(mojang, "Mojang Authentication", "Xbox Live 認証サービス")
+
+System(bedrockServer, "Minecraft Bedrock Server", "サーバー本体 (Windows/Linux)")
+
+System_Boundary(bf, "Bot Framework") {
+  Container(botCore, "Bot Core", "Node.js", "Bedrockプロトコル対応・AIロジック")
+  Container(cli, "CLI / Plugin", "PowerShell / BehaviorPack", "サーバー管理者が操作")
+}
+
+Rel(player, bedrockServer, "ゲームクライアント接続")
+Rel(admin, cli, "導入・設定 / コマンド実行")
+Rel(cli, botCore, "操作指令", "gRPC / stdin")
+Rel(botCore, bedrockServer, "Bedrockプロトコル(UDP)")
+Rel(admin, botCore, "ログ閲覧 / Web UI (optional)")
+Rel(bedrockServer, mojang, "認証API", "HTTPS")
+
+' Legend ------------------------------------------------------
+SHOW_LEGEND()
+@enduml

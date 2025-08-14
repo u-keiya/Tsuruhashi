@@ -1,0 +1,15 @@
+backbone:
+  - epic: 放置採掘
+    usdm_ids:
+      - US-001
+      - US-002
+      - US-003
+      - US-004
+releases:
+  - name: M1 プロトタイプ
+    stories:
+      - US-001-1
+      - US-001-2
+      - US-001-3
+      - US-001-4
+      - US-001-5

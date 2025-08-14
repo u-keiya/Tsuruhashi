@@ -1,0 +1,22 @@
+id: US-002
+title: 複数Bot同時運用
+persona: 統合版サーバー管理者
+story: |-
+  サーバー管理者として、複数のBotを同時に召喚・制御できるようにしたい。これにより広範な採掘領域を並列で処理し、プロジェクト期間を短縮できる。
+acceptance_criteria:
+  - |-
+    Scenario: Summon multiple bots
+      Given サーバー管理者が必要権限を持つ
+      When /summonbot 2 を入力する
+      Then 2体のBotがプレイヤー周囲にスポーンする
+  - |-
+    Scenario: Independent mining areas
+      Given 2体のBotが召喚されている
+      When 各Botに対して /setarea ... を実行する
+      Then 各Botが指定された別々の範囲を採掘する
+  - |-
+    Scenario: No noticeable lag
+      Given Botが複数稼働中
+      Then プレイヤーは体感的な操作遅延を感じない
+children: []
+notes: "リソース上限なし。性能はプレイヤー体感で軽量と判断されること。"
