@@ -17,6 +17,8 @@ System_Boundary(bf, "Bot Framework") {
   Container(cliPlugin, "CLI / Plugin", "PowerShell / Behavior Pack", "サーバー管理者用コマンド")
   Container(webUI, "Web UI (オプション)", "React", "Bot状況ダッシュボード")
   ContainerDb(stateDB, "State Store", "SQLite / LevelDB", "Bot状態・統計を保持")
+  ContainerQueue(retryQueue, "Retry Queue", "RabbitMQ / SQS", "失敗コマンドを一時保管")
+  Container(retryManager, "Retry Manager", "Node.js Worker", "失敗コマンドをバックオフ再送")
 }
 
 Rel(admin, cliPlugin, "/summonbot, /setarea など")
@@ -28,6 +30,9 @@ Rel(botCore, bedrockServer, "Bedrockプロトコル(UDP)")
 Rel(bedrockServer, mojang, "Auth API", "HTTPS")
 Rel(botCore, stateDB, "Read/Write")
 Rel(webUI, stateDB, "読み取り", "SQL")
+Rel_L(botCore, retryQueue, "Publish FailedCommand", "AMQP")
+Rel_R(retryManager, retryQueue, "Consume", "AMQP")
+Rel(retryManager, botCore, "Retry Command (async)")
 
 SHOW_LEGEND()
 @enduml

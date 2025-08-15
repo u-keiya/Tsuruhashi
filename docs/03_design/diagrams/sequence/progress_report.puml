@@ -1,0 +1,21 @@
+@startuml ProgressReport
+' =============================================================
+' Sequence Diagram : Periodic Progress & Tool Status Reporting
+' USDM: #US-004
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+participant "Bot Core\n(ProgressReporter)" as reporter
+boundary Scheduler as cron
+entity "State DB" as db
+boundary "Bedrock Server" as mc
+actor Admin as admin
+
+cron -> reporter : every 5 min
+reporter -> db : query minedBlocks, durability, toolCount
+db --> reporter : stats
+reporter -> mc : SendChat(フォーマット文字列)  #US-004
+mc --> admin : Chat表示
+
+@enduml

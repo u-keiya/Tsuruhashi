@@ -1,0 +1,37 @@
+@startuml AutoMining-Cycle
+' =============================================================
+' Sequence Diagram : AutoMining Tick & Block Break
+' USDM: #US-001-3 #US-001-4 #US-003
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+participant "Bot Core\n(MiningEngine)" as bot
+participant "PathFinder" as path
+participant "ToolManager" as tool
+entity "State DB" as db
+boundary "Bedrock Server" as mc
+
+== 移動フェーズ ==
+bot -> path : calcPath(curPos, target)   #US-001-3
+path --> bot : path[]
+loop per step
+  bot -> mc : MovePacket(step)
+end
+
+== 採掘フェーズ ==
+loop per block
+  bot -> mc : DigStart(block)
+  mc --> bot : DigAck
+  bot -> tool : notifyUse(blockHardness)
+  tool -> bot : toolOk / needSwap?
+  alt needSwap
+    tool -> db : select nextUsableTool()
+    tool --> bot : equipTool(tool)
+  end
+  bot -> db : update minedCount++
+end
+
+== Tick Update ==
+bot -> db : update position, state
+@enduml

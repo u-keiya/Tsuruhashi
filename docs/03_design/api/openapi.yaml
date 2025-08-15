@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: Bot Control API
+  version: 0.1.0
+  description: |
+    Minecraft Bedrock Bot Framework Control API  
+    USDM: #US-001 #US-002 #US-003 #US-004
+servers:
+  - url: http://localhost:8080
+    description: Local Dev
+tags:
+  - name: Bot
+    description: Bot lifecycle & mining control
+components:
+  schemas:
+    Coord:
+      type: object
+      properties:
+        x: { type: integer, example: 100 }
+        y: { type: integer, example: 64 }
+        z: { type: integer, example: -20 }
+      required: [x, y, z]
+    MiningArea:
+      type: object
+      properties:
+        start: { $ref: '#/components/schemas/Coord' }
+        end:   { $ref: '#/components/schemas/Coord' }
+      required: [start, end]
+    BotSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid, example: "d6a7f..." }
+        state: { type: string, enum: [Idle, Moving, Mining, ToolSwap] }
+      required: [id, state]
+paths:
+  /bots/summon:
+    post:
+      summary: Summon new bot  #US-001-1
+      tags: [Bot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerId: { type: string }
+              required: [playerId]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BotSummary' }
+  /bots/{botId}/area:
+    post:
+      summary: Set mining area  #US-001-2
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MiningArea' }
+      responses:
+        '202':
+          description: Accepted
+  /bots/{botId}/start:
+    post:
+      summary: Start mining  #US-001-4
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202': { description: Accepted }
+  /bots/{botId}/stop:
+    post:
+      summary: Stop mining
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202': { description: Accepted }
+  /bots/{botId}/progress:
+    get:
+      summary: Get progress & tool status  #US-004
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  progress: { type: number, format: float, example: 42.3 }
+                  minedBlocks: { type: integer, example: 1234 }
+                  durability: { type: integer, example: 87 }
+                  maxDurability: { type: integer, example: 2031 }
+                  toolCount: { type: integer, example: 5 }

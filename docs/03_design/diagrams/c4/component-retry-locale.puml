@@ -1,0 +1,42 @@
+@startuml C4-Component-Retry-Locale
+' =============================================================
+' C4 Component Diagram : Web UI / Locale / Retry Manager
+' USDM: US-002 US-003
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+System(bedrockServer, "Minecraft Bedrock Server")
+Container(botCore, "Bot Core Service", "Node.js")
+
+' ---------- Web UI ----------
+Boundary(ui, "Web UI (React)") {
+  Component(dashboard, "Dashboard", "TypeScript + React", "Bot 状態ダッシュボード")
+  Component(localeAdapter, "LocaleAdapter", "TypeScript", "UI テキストをプレイヤー言語へ切替")
+}
+
+' ---------- Retry Manager ----------
+Boundary(retryMgr, "Retry Manager (Node.js Worker)") {
+  Component(retryConsumer, "RetryConsumer", "TypeScript", "Retry Queue から失敗コマンド取得")
+  Component(retryBackoff, "BackoffScheduler", "TypeScript", "指数バックオフで再送タイミング決定")
+  Component(retryDispatcher, "RetryDispatcher", "TypeScript", "BotCore へ非同期再送")
+}
+
+' ---------- External Stores ----------
+ContainerQueue(retryQueue, "Retry Queue", "RabbitMQ / SQS")
+ContainerDb(localeStore, "Locale Resource Store", "YAML / JSON", "翻訳辞書")
+
+' ---------- Relations ----------
+Rel_U(dashboard, botCore, "Fetch Metrics", "REST")
+Rel(dashboard, localeAdapter, "getLabel(key, lang)")
+Rel(localeAdapter, localeStore, "Read", "YAML/JSON")
+
+Rel(retryConsumer, retryQueue, "Consume FailedCommand", "AMQP")
+Rel(retryDispatcher, botCore, "Retry Command", "gRPC")
+Rel(retryBackoff, retryDispatcher, "Schedule")
+
+' 内部依存
+Rel(retryConsumer, retryBackoff, "失敗コマンド渡し")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,34 @@
+@startuml SummonBot-SetArea
+' =============================================================
+' Sequence Diagram : SummonBot & SetArea
+' USDM: #US-001-1 #US-001-2
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+' Participants
+actor Player as player
+boundary "CLI / Plugin" as cli
+boundary "Control API" as api
+control "Bot Core\n(MiningEngine)" as botCore
+entity "State DB" as db
+
+' Summon Bot
+player -> cli : /summonbot
+cli -> api : POST /bots/summon(playerId)
+api -> botCore : summonBot(playerId)          #US-001-1
+botCore -> db : insert Bot(id,status=Idle)
+botCore --> api : BotId
+api --> cli : 201 Created (BotId)
+cli --> player : "Bot summoned"
+
+' Set Mining Area
+player -> cli : /setarea BotId x1 y1 z1 x2 y2 z2
+cli -> api : POST /bots/{id}/area(range)
+api -> botCore : setMiningArea(id, range)     #US-001-2
+botCore -> db : update Bot(id, range)
+botCore --> api : 202 Accepted
+api --> cli : Ack
+cli --> player : "Area set"
+
+@enduml

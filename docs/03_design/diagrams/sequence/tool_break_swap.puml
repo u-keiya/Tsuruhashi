@@ -1,0 +1,29 @@
+@startuml ToolBreak-AutoSwap
+' =============================================================
+' Sequence Diagram : Tool Durability 0 -> Auto Swap
+' USDM: #US-003
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+participant "Bot Core\n(MiningEngine)" as bot
+participant "ToolManager" as tool
+entity "Inventory" as inv
+boundary "Bedrock Server" as mc
+actor Player as player
+
+== 採掘中耐久0 ==
+bot -> tool : notifyDurability(toolId, 0)
+tool -> inv : nextUsableTool()
+alt 予備ツールあり
+  inv --> tool : Tool(newTool)
+  tool -> bot : equip(newTool)
+  bot -> mc : ChangeHeldItem(newTool)
+  bot --> player : Chat "ツール交換完了"
+else 予備なし
+  tool --> bot : none
+  bot --> player : Chat "ツール切れで停止"
+  bot -> mc : StopDig
+end
+
+@enduml
