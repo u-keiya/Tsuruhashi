@@ -1,19 +1,104 @@
-@startuml BotCore-Classes
+@startuml BotCore-Classes-Revised
 ' =============================================================
-' Bot Core Domain Class Diagram
+' Bot Core Domain Class Diagram (Plugin Architecture)
 ' USDM: #US-001 #US-002 #US-003 #US-004
 ' =============================================================
 
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
-' ↑ 便宜上 C4 stereotypes を再利用（Entity / ValueObject / Service 等）
 
 '---------------------------
-' Value Objects
+' Core API & Infrastructure
 '---------------------------
-class MiningArea <<ValueObject>> {
-  +Coord start
-  +Coord end
-  +int volume()
+class Bot <<Entity>> {
+  +UUID id
+  +EventEmitter events
+  +State state
+  +Protocol protocol
+  +PluginLoader plugins
+  --
+  +chat(message)
+  +dig(block)
+  +equip(item)
+  +...
+}
+
+class Protocol <<Service>> {
+  +connect()
+  +send(packet)
+  +onPacket()
+}
+
+class PluginLoader <<Service>> {
+  +load(name, options)
+  +unload(name)
+  +get(name)
+}
+
+abstract class Plugin {
+  +Bot bot
+  +inject()
+}
+
+'---------------------------
+' Core Plugins
+'---------------------------
+class PhysicsPlugin extends Plugin {
+  +Vector3 position
+  +Vector3 velocity
+  +simulate()
+}
+
+class WorldPlugin extends Plugin {
+  +Block getBlock(coord)
+  +Entity getEntity(id)
+}
+
+class InventoryPlugin extends Plugin {
+  +List<Item> items
+  +int emptySlotCount()
+}
+
+'---------------------------
+' Behavior Plugins
+'---------------------------
+class AutoMiningPlugin extends Plugin {
+  +start(area)
+  +stop()
+  -onTick()
+}
+
+class ReporterPlugin extends Plugin {
+  +start()
+  +stop()
+  -report()
+}
+
+'---------------------------
+' Enumerations / Value Objects
+'---------------------------
+enum State {
+  Idle
+  Moving
+  Mining
+  ToolSwap
+  Error
+}
+
+class Vector3 <<ValueObject>> {
+  +float x
+  +float y
+  +float z
+}
+
+class Block <<ValueObject>> {
+  +Coord pos
+  +string type
+}
+
+class Item <<ValueObject>> {
+  +string name
+  +int durability
+  +int maxDurability
 }
 
 class Coord <<ValueObject>> {
@@ -23,75 +108,30 @@ class Coord <<ValueObject>> {
 }
 
 '---------------------------
-' Entities
-'---------------------------
-class Bot <<Entity>> {
-  +UUID id
-  +BotState state
-  +Coord position
-  +Inventory inventory
-  +startMining(MiningArea)
-  +stopMining()
-}
-
-class Tool <<Entity>> {
-  +string name
-  +int durability
-  +int maxDurability
-  +boolean isBroken()
-}
-
-enum BotState {
-  Idle
-  Moving
-  Mining
-  ToolSwap
-  Error
-}
-
-class Inventory {
-  +List<Tool> tools
-  +addTool(Tool)
-  +Tool nextUsableTool()
-}
-
-'---------------------------
-' Domain Services
-'---------------------------
-class MiningEngine <<Service>> {
-  +startMining(Bot, MiningArea)      #US-001-4
-  +tick()                            ' per game tick
-  -mineBlock()
-}
-
-class PathFinder <<Service>> {
-  +List<Coord> calcPath(Coord from, Coord to)   #US-001-3
-}
-
-class ToolManager <<Service>> {
-  +onDurabilityChange(Bot, Tool)     #US-003
-  -equipTool(Bot, Tool)
-}
-
-class ProgressReporter <<Service>> {
-  +updateProgress(Bot, int minedBlocks)
-}
-
-class ChatReporter <<Service>> {
-  +reportProgress(BotStatus)         #US-004
-}
-
-'---------------------------
 ' Associations
 '---------------------------
-Bot "1" -- "1" Inventory
-Inventory "1" *-- "0..*" Tool
-Bot "1" --> MiningEngine : uses
-MiningEngine ..> PathFinder
-MiningEngine ..> ToolManager
-MiningEngine ..> ProgressReporter
-ProgressReporter ..> ChatReporter
-ToolManager ..> Inventory : swap tools
-MiningEngine --> MiningArea : target
+Bot "1" o-- "1" Protocol
+Bot "1" o-- "1" PluginLoader
+PluginLoader "1" *-- "0..*" Plugin
+Plugin "1" -- "1" Bot
+
+AutoMiningPlugin ..> WorldPlugin : uses
+AutoMiningPlugin ..> PhysicsPlugin : uses
+AutoMiningPlugin ..> InventoryPlugin : uses
+
+'---------------------------
+' Deletion
+'---------------------------
+class DeletionManager <<Service>> {
+  +deleteBot(botId)
+}
+
+class BotDeleted <<Event>> {
+  +UUID botId
+  +Timestamp deletedAt
+}
+
+Bot "1" o-- "1" DeletionManager
+DeletionManager --> BotDeleted : publish
 
 @enduml

@@ -1,7 +1,7 @@
 @startuml C4-Component-BotCore
 ' =============================================================
 ' C4 Component Diagram : Bot Core Service
-' USDM: US-001 US-002 US-003 US-004
+' USDM: US-001 US-002 US-003 US-004 US-005
 ' =============================================================
 
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
@@ -16,9 +16,11 @@ Boundary(botCore, "Bot Core Service (Node.js)") {
   Component(toolManager, "ToolManager", "TypeScript", "ツール装備・耐久監視・交換", $US-003)
   Component(progressReporter, "ProgressReporter", "TypeScript", "採掘進捗計算")
   Component(chatReporter, "ChatReporter", "TypeScript", "5分毎に進捗チャット送信 (固定)", $US-004)
+  Component(deletionManager, "DeletionManager", "TypeScript", "不要Botプロセスとリソースを物理削除", $US-005)
   Component(stateAdapter, "StateAdapter", "TypeScript", "Bot状態を SQLite に永続化")
 }
 
+Rel(controlAPI, deletionManager, "Command: deleteBot(id)")
 Rel(controlAPI, miningEngine, "Command: startMining(range)")
 Rel(miningEngine, pathFinder, "経路要求")
 Rel(miningEngine, toolManager, "ツール使用/耐久通知")

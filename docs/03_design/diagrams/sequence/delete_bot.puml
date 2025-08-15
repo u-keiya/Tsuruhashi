@@ -1,0 +1,29 @@
+@startuml Delete-Bot-Sequence
+' =============================================================
+' Sequence Diagram : Physical Bot Deletion
+' USDM: #US-005   ADR:0004-physical-bot-deletion
+' =============================================================
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+actor "Admin\n(WebUI/CLI)" as admin
+boundary "Control API\nDELETE /bots/{id}" as api
+component "DeletionManager" as dm
+participant "Bot Process" as bot
+database "State Store\n(SQLite)" as db
+queue "Event Bus" as bus
+
+== Authorization ==
+admin -> api : HTTP DELETE /bots/{id}\nAuthorization: Bearer token
+api --> admin : 204 No Content (accepted)
+
+== Deletion Flow ==
+api -> dm : deleteBot(botId)   #US-005
+dm -> bot : sendGracefulStop()
+bot --> dm : exited
+dm -> db : removeBotRecord(botId)
+dm -> dm : deleteInventoryFiles(botId)
+dm -> bus : publish BotDeleted(botId)
+bus --> (Audit) : BotDeleted
+
+@enduml

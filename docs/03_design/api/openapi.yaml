@@ -3,8 +3,8 @@ info:
   title: Bot Control API
   version: 0.1.0
   description: |
-    Minecraft Bedrock Bot Framework Control API  
-    USDM: #US-001 #US-002 #US-003 #US-004
+    Minecraft Bedrock Bot Framework Control API
+    USDM: #US-001 #US-002 #US-003 #US-004 #US-005
 servers:
   - url: http://localhost:8080
     description: Local Dev
@@ -32,6 +32,16 @@ components:
         id: { type: string, format: uuid, example: "d6a7f..." }
         state: { type: string, enum: [Idle, Moving, Mining, ToolSwap] }
       required: [id, state]
+    PluginSpec:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "auto-mining"
+        options:
+          type: object
+          additionalProperties: true
+      required: [name]
 paths:
   /bots/summon:
     post:
@@ -113,3 +123,56 @@ paths:
                   durability: { type: integer, example: 87 }
                   maxDurability: { type: integer, example: 2031 }
                   toolCount: { type: integer, example: 5 }
+  /bots/{botId}/plugins/load:
+    post:
+      summary: Load plugin into bot
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PluginSpec' }
+      responses:
+        '202': { description: Accepted }
+
+  /bots/{botId}:
+    delete:
+      summary: Delete bot permanently  #US-005
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: No Content – Bot deleted
+        '403':
+          description: Forbidden – requires Admin role
+        '404':
+          description: Not Found
+  /bots/{botId}/plugins/unload:
+    post:
+      summary: Unload plugin from bot
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: "auto-mining" }
+              required: [name]
+      responses:
+        '202': { description: Accepted }
