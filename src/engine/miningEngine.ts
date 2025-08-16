@@ -31,6 +31,7 @@ export class MiningEngine {
   private readonly stateDB: StateDBLike;
 
   private state: BotState = BotState.Idle;
+
   private stepping: boolean = false;
 
   private currentPos: Coord;
