@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import BotService from '../services/bot.service';
-import { SummonBotRequest } from '../types/bot.types';
+import { SummonBotRequest, MiningArea } from '../types/bot.types';
 
 /**
  * Botのコントローラークラス
@@ -79,5 +79,35 @@ export default class BotController {
   getAllBots(_req: Request, res: Response): void {
     const bots = this.botService.getAllBots();
     res.status(200).json(bots);
+  }
+
+  /**
+   * 採掘範囲を設定する
+   * POST /bots/:id/area
+   * - 正常: 202 Accepted
+   * - 無効範囲: 400 + B001 InvalidRange
+   * - Bot未存在: 404 + B002 BotNotFound
+   */
+  setMiningArea(req: Request, res: Response): void {
+    const { id } = req.params;
+    const bot = this.botService.getBot(id);
+
+    if (!bot) {
+      res.status(404).json({ error: { code: 'B002', message: 'Bot not found' } });
+      return;
+    }
+
+    try {
+      const area = req.body as MiningArea;
+      this.botService.setMiningArea(id, area);
+      res.status(202).send();
+    } catch (error) {
+      if (error instanceof Error && error.message === 'InvalidRange') {
+        res.status(400).json({ error: { code: 'B001', message: 'InvalidRange' } });
+      } else {
+        console.error('Error in setMiningArea:', error);
+        res.status(500).json({ error: 'Failed to set mining area' });
+      }
+    }
   }
 }
