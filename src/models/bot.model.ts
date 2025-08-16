@@ -96,18 +96,31 @@ export default class Bot {
     if (!Bot.isValidCoord(area?.start) || !Bot.isValidCoord(area?.end)) {
       throw new Error('InvalidRange');
     }
-    this.miningArea = area;
+    // 外部からの参照/改変を防ぐためディープコピーして保持
+    this.miningArea = {
+      start: { x: area.start.x, y: area.start.y, z: area.start.z },
+      end:   { x: area.end.x,   y: area.end.y,   z: area.end.z   }
+    };
   }
 
   /**
    * 採掘エリアの取得
    */
   getMiningArea(): MiningArea | null {
-    return this.miningArea;
+    // 保持している内部状態を外部から改変できないよう常にコピーを返す
+    return this.miningArea
+      ? {
+          start: { ...this.miningArea.start },
+          end:   { ...this.miningArea.end }
+        }
+      : null;
   }
 
   private static isValidCoord(c: Coord | undefined | null): c is Coord {
+    const MIN_Y = -64;
+    const MAX_Y = 320;
     return !!c
-      && Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z);
+      && Number.isInteger(c.x) && Number.isInteger(c.y) && Number.isInteger(c.z)
+      && c.y >= MIN_Y && c.y <= MAX_Y;
   }
 }

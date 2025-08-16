@@ -106,7 +106,7 @@ export default class BotController {
         res.status(400).json({ error: { code: 'B001', message: 'InvalidRange' } });
       } else {
         console.error('Error in setMiningArea:', error);
-        res.status(500).json({ error: 'Failed to set mining area' });
+        res.status(500).json({ error: { code: 'B000', message: 'Failed to set mining area' } });
       }
     }
   }

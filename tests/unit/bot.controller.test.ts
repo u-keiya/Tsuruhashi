@@ -153,5 +153,27 @@ describe('BotController', () => {
         error: { code: 'B002' }
       })).to.be.true;
     });
+    it('should return 500 with B000 on unexpected errors', () => {
+      const botId = 'bot-123';
+      const area = {
+        start: { x: 0, y: 60, z: 0 },
+        end: { x: 10, y: 70, z: 10 }
+      };
+
+      sinon.stub(botService, 'getBot').returns({} as any);
+      sinon.stub(botService, 'setMiningArea').throws(new Error('Boom'));
+
+      const req = {
+        params: { id: botId },
+        body: area
+      } as unknown as Request;
+
+      botController.setMiningArea(req, res as Response);
+
+      expect(statusStub.calledWith(500)).to.be.true;
+      expect(jsonStub.calledWithMatch({
+        error: { code: 'B000', message: 'Failed to set mining area' }
+      })).to.be.true;
+    });
   });
 });
