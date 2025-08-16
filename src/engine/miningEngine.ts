@@ -31,6 +31,7 @@ export class MiningEngine {
   private readonly stateDB: StateDBLike;
 
   private state: BotState = BotState.Idle;
+  private stepping: boolean = false;
 
   private currentPos: Coord;
 
@@ -65,14 +66,14 @@ export class MiningEngine {
   setTarget(target: Coord, passable?: (c: Coord) => boolean): void {
     this.target = { ...target };
     this.path = PathFinder.calcPath(this.currentPos, this.target, passable);
-    this.pathIndex = 0;
-
-    if (this.path.length > 0) {
-      this.state = BotState.Moving;
-    } else {
-      // 経路が見つからなければ Idle のまま
+    // 経路の先頭は start なのでスキップ。長さ1（start==goal）は Idle のまま。
+    if (this.path.length <= 1) {
+      this.pathIndex = 0;
       this.state = BotState.Idle;
+      return;
     }
+    this.pathIndex = 1;
+    this.state = BotState.Moving;
   }
 
   /**
@@ -83,34 +84,44 @@ export class MiningEngine {
    * - ゴールへ到達したら Idle へ戻す
    */
   async step(): Promise<void> {
-    if (this.state !== BotState.Moving) return;
-    if (this.pathIndex >= this.path.length) {
-      // 念のため
-      this.state = BotState.Idle;
-      return;
-    }
+    if (this.stepping) return;
+    this.stepping = true;
+    try {
+      if (this.state !== BotState.Moving) return;
+      if (this.pathIndex >= this.path.length) {
+        // 念のため
+        this.state = BotState.Idle;
+        return;
+      }
 
-    // 次の地点へ「移動」
-    const next = this.path[this.pathIndex];
-    this.currentPos = { ...next };
-    this.pathIndex += 1;
+      // 次の地点へ「移動」
+      const next = this.path[this.pathIndex];
+      this.currentPos = { ...next };
+      this.pathIndex += 1;
 
-    // Bedrock の move packet を送る（payload は最小限、ユニットテストではモック）
-    this.client.queue('move_player', {
-      position: {
-        x: this.currentPos.x,
-        y: this.currentPos.y,
-        z: this.currentPos.z
-      },
-      on_ground: true
-    });
+      // Bedrock の move packet を送る（payload は最小限、ユニットテストではモック）
+      this.client.queue('move_player', {
+        position: {
+          x: this.currentPos.x,
+          y: this.currentPos.y,
+          z: this.currentPos.z
+        },
+        on_ground: true
+      });
 
-    // StateDB 書き込み（Moving と現在座標）
-    await this.stateDB.upsert(this.botId, BotState.Moving, this.currentPos);
+      // StateDB 書き込み（Moving と現在座標）
+      await this.stateDB.upsert(this.botId, BotState.Moving, this.currentPos);
 
-    // 目的地へ到達したら Idle へ
-    if (this.pathIndex >= this.path.length) {
-      this.state = BotState.Idle;
+      // 目的地へ到達したら Idle へ
+      if (this.pathIndex >= this.path.length) {
+        this.state = BotState.Idle;
+        // 永続化も Idle へ反映
+        await this.stateDB.upsert(this.botId, BotState.Idle, this.currentPos);
+        // 完了後は target をクリア
+        this.target = null;
+      }
+    } finally {
+      this.stepping = false;
     }
   }
 }

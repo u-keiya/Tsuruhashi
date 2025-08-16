@@ -53,6 +53,10 @@ export class PathFinder {
     if (key(start) === key(goal)) {
       return [ { ...start } ];
     }
+    // ゴールが通行不可なら探索不要
+    if (!isPassable(goal)) {
+      return [];
+    }
 
     const openSet = new Set<string>([key(start)]);
     const cameFrom = new Map<string, string>();
@@ -62,6 +66,9 @@ export class PathFinder {
 
     const fScore = new Map<string, number>();
     fScore.set(key(start), manhattan(start, goal));
+
+    // closed set を導入
+    const closedSet = new Set<string>();
 
     // シンプルな open リスト（要素数が小さい前提で線形探索）
     const getLowestF = (): string => {
@@ -89,14 +96,15 @@ export class PathFinder {
       }
 
       openSet.delete(currentKey);
+      closedSet.add(currentKey);
 
       // ループ構文制限に従い index ループで処理し、continue は使用しない
       const nbs = neighbors(current);
       for (let i = 0; i < nbs.length; i += 1) {
         const nb = nbs[i];
-        if (isPassable(nb)) {
+        const nbKey = key(nb);
+        if (!closedSet.has(nbKey) && isPassable(nb)) {
           const tentativeG = (gScore.get(currentKey) ?? Number.POSITIVE_INFINITY) + 1;
-          const nbKey = key(nb);
           if (tentativeG < (gScore.get(nbKey) ?? Number.POSITIVE_INFINITY)) {
             cameFrom.set(nbKey, currentKey);
             gScore.set(nbKey, tentativeG);

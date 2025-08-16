@@ -44,4 +44,18 @@ describe('PathFinder.calcPath (A*)', () => {
     // 直進 3 歩よりは長い（回り道になっている）
     expect(path.length - 1).to.be.greaterThan(3);
   });
+  it('start===goal の場合は [start] を返す', () => {
+    const s: Coord = { x: 1, y: 2, z: 3 };
+    const g: Coord = { ...s };
+    const path = PathFinder.calcPath(s, g);
+    expect(path).to.deep.equal([s]);
+  });
+
+  it('ゴールが通行不可なら空配列を返す', () => {
+    const s: Coord = { x: 0, y: 60, z: 0 };
+    const g: Coord = { x: 3, y: 60, z: 2 };
+    const passable = (c: Coord) => !(c.x === g.x && c.y === g.y && c.z === g.z);
+    const path = PathFinder.calcPath(s, g, passable);
+    expect(path).to.deep.equal([]);
+  });
 });

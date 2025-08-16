@@ -62,12 +62,20 @@ describe('MiningEngine', () => {
     }
 
     // StateDB は Moving と現在座標を書き込む
-    expect(stateDB.upsert.callCount).to.equal(client.queue.callCount);
+    expect(stateDB.upsert.callCount).to.equal(client.queue.callCount + 1);
     for (let i = 0; i < stateDB.upsert.callCount; i += 1) {
       const [calledBotId, calledState, calledPos] = stateDB.upsert.getCall(i).args as [string, BotState, Coord];
       expect(calledBotId).to.equal(botId);
-      expect(calledState).to.equal(BotState.Moving);
+      if (i < client.queue.callCount) {
+        expect(calledState).to.equal(BotState.Moving);
+      } else {
+        expect(calledState).to.equal(BotState.Idle);
+      }
       expect(calledPos).to.have.keys(['x', 'y', 'z']);
+        if (i < client.queue.callCount) {
+          const queuedPos = (client.queue.getCall(i).args[1] as any).position;
+          expect(calledPos).to.deep.equal(queuedPos);
+        }
     }
 
     // 最終 tick の MovePacket 位置はゴールに一致するはず
