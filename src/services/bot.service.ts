@@ -1,5 +1,5 @@
 import Bot from '../models/bot.model';
-import { BotSummary } from '../types/bot.types';
+import { BotSummary, MiningArea } from '../types/bot.types';
 
 /**
  * Botのサービスクラス
@@ -60,5 +60,20 @@ export default class BotService {
    */
   getAllBots(): BotSummary[] {
     return Array.from(this.bots.values()).map(bot => bot.getSummary());
+  }
+
+  /**
+   * 採掘エリアを設定する
+   * @param botId BotのID
+   * @param area 採掘エリア
+   * @throws Error 'BotNotFound' | 'InvalidRange'
+   */
+  setMiningArea(botId: string, area: MiningArea): void {
+    const bot = this.bots.get(botId);
+    if (!bot) {
+      throw new Error('BotNotFound');
+    }
+    // Bot.setMiningArea 内で InvalidRange を検証
+    bot.setMiningArea(area);
   }
 }
