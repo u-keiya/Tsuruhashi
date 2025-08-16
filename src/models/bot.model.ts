@@ -1,6 +1,6 @@
 import { createClient, Client } from 'bedrock-protocol';
 import { v4 as uuidv4 } from 'uuid';
-import { BotState, BotSummary, Coord } from '../types/bot.types';
+import { BotState, BotSummary, Coord, MiningArea } from '../types/bot.types';
 
 /**
  * Minecraftのボットを表すクラス
@@ -15,6 +15,8 @@ export default class Bot {
 
   private position: Coord | null;
 
+  private miningArea: MiningArea | null;
+
   private ownerPlayerId: string | null;
 
   constructor() {
@@ -22,6 +24,7 @@ export default class Bot {
     this.state = BotState.Idle;
     this.client = null;
     this.position = null;
+    this.miningArea = null;
     this.ownerPlayerId = null;
   }
 
@@ -82,5 +85,29 @@ export default class Bot {
    */
   getPosition(): Coord | null {
     return this.position;
+  }
+
+  /**
+   * 採掘エリアの設定
+   * @param area MiningArea
+   * @throws Error 引数が不正な場合
+   */
+  setMiningArea(area: MiningArea): void {
+    if (!Bot.isValidCoord(area?.start) || !Bot.isValidCoord(area?.end)) {
+      throw new Error('InvalidRange');
+    }
+    this.miningArea = area;
+  }
+
+  /**
+   * 採掘エリアの取得
+   */
+  getMiningArea(): MiningArea | null {
+    return this.miningArea;
+  }
+
+  private static isValidCoord(c: Coord | undefined | null): c is Coord {
+    return !!c
+      && Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z);
   }
 }
