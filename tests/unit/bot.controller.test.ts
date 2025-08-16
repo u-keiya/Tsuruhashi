@@ -87,7 +87,7 @@ describe('BotController', () => {
       statusStub.returns(res);
     });
 
-    it('should return 202 when area is set successfully', () => {
+    it('should return 202 when area is set successfully', async () => {
       const botId = 'bot-123';
       const area = {
         start: { x: 0, y: 60, z: 0 },
@@ -103,12 +103,11 @@ describe('BotController', () => {
         body: area
       } as unknown as Request;
 
-      botController.setMiningArea(req, res as Response);
+      await botController.setMiningArea(req, res as Response);
 
       expect(statusStub.calledWith(202)).to.be.true;
       expect(sendStub.calledOnce).to.be.true;
     });
-
     it('should return 400 with B001 when range is invalid', () => {
       const botId = 'bot-123';
       const area = {
