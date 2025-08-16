@@ -6,9 +6,15 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint --max-warnings=0 --ext .ts src",
-    "lint:fix": "eslint --ext .ts src --fix"
+    "test": "mocha -r ts-node/register 'tests/**/*.test.ts'",
+    "lint": "eslint --ext .ts src",
+    "lint:fix": "eslint --ext .ts src --fix",
+    "build": "tsc && chmod +x dist/cli/summonbot.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "bin": {
+    "summonbot": "./dist/cli/summonbot.js"
   },
   "repository": {
     "type": "git",
@@ -23,15 +29,36 @@
   "homepage": "https://github.com/u-keiya/Tsuruhashi#readme",
   "description": "",
   "devDependencies": {
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.3.0",
+    "@types/sinon": "^17.0.4",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "chai": "^5.2.1",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^18.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
+    "mocha": "^11.7.1",
     "prettier": "^3.6.2",
+    "sinon": "^21.0.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.3",
+    "@types/sqlite3": "^3.1.11",
+    "@types/uuid": "^10.0.0",
+    "@types/yargs": "^17.0.33",
+    "axios": "^1.11.0",
+    "bedrock-protocol": "^3.48.1",
+    "express": "^5.1.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0",
+    "yargs": "^18.0.0"
   }
 }
