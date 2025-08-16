@@ -30,14 +30,13 @@ yargs(hideBin(process.argv))
   .command(
     'summon',
     'Summon a new bot',
-    (yargs) => {
-      return yargs.option('player-id', {
+    (y) =>
+      y.option('player-id', {
         alias: 'p',
         type: 'string',
         description: 'Player ID',
         demandOption: true
-      });
-    },
+      }),
     async (argv) => {
       await summonBot(argv['player-id']);
     }
@@ -45,4 +44,4 @@ yargs(hideBin(process.argv))
   .demandCommand(1, 'You must specify a command')
   .strict()
   .help()
-  .argv;
+  .parse();

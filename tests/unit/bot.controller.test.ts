@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { Request, Response } from 'express';
-import { BotController } from '../../src/controllers/bot.controller';
-import { BotService } from '../../src/services/bot.service';
+import BotController from '../../src/controllers/bot.controller';
+import BotService from '../../src/services/bot.service';
 import { BotState, BotSummary } from '../../src/types/bot.types';
 
 describe('BotController', () => {

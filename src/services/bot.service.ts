@@ -1,11 +1,11 @@
-import { Bot } from '../models/bot.model';
+import Bot from '../models/bot.model';
 import { BotSummary } from '../types/bot.types';
 
 /**
  * Botのサービスクラス
  * US-001-1: Botのサモン機能
  */
-export class BotService {
+export default class BotService {
   private bots: Map<string, Bot>;
 
   constructor() {

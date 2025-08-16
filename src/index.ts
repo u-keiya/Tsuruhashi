@@ -1,5 +1,5 @@
 import express from 'express';
-import { BotController } from './controllers/bot.controller';
+import BotController from './controllers/bot.controller';
 
 const app = express();
 const port = process.env.PORT || 8080;

@@ -6,17 +6,23 @@ import { BotState, BotSummary, Coord } from '../types/bot.types';
  * Minecraftのボットを表すクラス
  * US-001-1: Botのサモン機能
  */
-export class Bot {
+export default class Bot {
   private readonly id: string;
+
   private state: BotState;
+
   private client: Client | null;
+
   private position: Coord | null;
+
+  private ownerPlayerId: string | null;
 
   constructor() {
     this.id = uuidv4();
     this.state = BotState.Idle;
     this.client = null;
     this.position = null;
+    this.ownerPlayerId = null;
   }
 
   /**
@@ -24,6 +30,7 @@ export class Bot {
    * @param playerId プレイヤーID
    */
   async connect(playerId: string): Promise<void> {
+    this.ownerPlayerId = playerId;
     try {
       this.client = await createClient({
         host: 'localhost',

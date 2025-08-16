@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
-import { BotService } from '../services/bot.service';
+import BotService from '../services/bot.service';
 import { SummonBotRequest } from '../types/bot.types';
 
 /**
  * Botのコントローラークラス
  * US-001-1: Botのサモン機能
  */
-export class BotController {
+export default class BotController {
   private botService: BotService;
 
   constructor() {
