@@ -84,6 +84,8 @@ export default class BotController {
   /**
    * 採掘範囲を設定する
    * POST /bots/:id/area
+   * リクエストボディは MiningArea（start/end がトップレベル）形式:
+   * { "start": { x, y, z }, "end": { x, y, z } }
    * - 正常: 202 Accepted
    * - 無効範囲: 400 + B001 InvalidRange
    * - Bot未存在: 404 + B002 BotNotFound
@@ -98,6 +100,7 @@ export default class BotController {
     }
 
     try {
+      // req.body は MiningArea 形式（area プロパティなし、start/end が直下）
       const area = req.body as MiningArea;
       this.botService.setMiningArea(id, area);
       res.status(202).send();
