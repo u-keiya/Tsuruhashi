@@ -135,9 +135,14 @@ describe('MiningEngine - Auto mining loop (Issue #5 US-001-4)', () => {
     expect(actionCalls.length).to.equal(1);
     expect(actionCalls[0].args[1]).to.have.property('action', 'start_break');
 
-    // Tool が1回使用され、StateDB.incrementMined が1回呼ばれる
+    // Tool が1回使用され、StateDB.incrementMined が1回呼ばれる（引数も検証）
     expect((toolManager.notifyUse as sinon.SinonSpy).callCount).to.equal(1);
+    const [hardness] = (toolManager.notifyUse as sinon.SinonSpy).getCall(0).args;
+    expect(hardness).to.equal(1);
     expect((stateDB as any).incrementMined.callCount).to.equal(1);
+    const [incBotId, incN] = (stateDB as any).incrementMined.getCall(0).args;
+    expect(incBotId).to.equal(botId);
+    expect(incN).to.equal(1);
 
     // エンジンの内部カウンタも 1
     expect(engine.getMinedBlocks()).to.equal(1);
@@ -194,6 +199,9 @@ describe('MiningEngine - Auto mining loop (Issue #5 US-001-4)', () => {
     expect(moveCalls.length).to.be.greaterThan(0);
     const actionCalls = (client.queue as sinon.SinonSpy).getCalls().filter((c) => c.args[0] === 'player_action');
     expect(actionCalls.length).to.equal(1);
+    expect(actionCalls[0].args[1]).to.have.property('action', 'start_break');
+    expect(actionCalls[0].args[1]).to.have.property('position');
+    expect(actionCalls[0].args[1].position).to.deep.equal(goal);
 
     // Tool 使用と mined カウント
     expect((toolManager.notifyUse as sinon.SinonSpy).callCount).to.equal(1);
@@ -203,5 +211,16 @@ describe('MiningEngine - Auto mining loop (Issue #5 US-001-4)', () => {
     // 最終は Idle、位置はゴール
     expect(engine.getState()).to.equal(BotState.Idle);
     expect(engine.getPosition()).to.deep.equal(goal);
+    // 最後の move_player の位置もゴールに一致
+    const lastMovePayload = (client.queue as sinon.SinonSpy)
+      .getCalls()
+      .filter((c) => c.args[0] === 'move_player')
+      .pop()?.args[1];
+    expect(lastMovePayload.position).to.deep.equal(goal);
+    // 送信順序: 最終 move_player の後に player_action
+    const calls = (client.queue as sinon.SinonSpy).getCalls();
+    const lastMoveIdx = calls.map((c, i) => [i, c] as const).filter(([, c]) => c.args[0] === 'move_player').map(([i]) => i).pop() ?? -1;
+    const actionIdx = calls.findIndex((c) => c.args[0] === 'player_action');
+    expect(lastMoveIdx).to.be.lessThan(actionIdx, 'player_action は移動完了後に送られるべき');
   });
 });
