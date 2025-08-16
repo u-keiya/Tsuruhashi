@@ -148,7 +148,7 @@ export class MiningEngine {
     try {
       // Idle 中に採掘キューが有れば次の作業を割り当て
       if (this.state === BotState.Idle) {
-        this.scheduleNextMining();
+        await this.scheduleNextMining();
       }
 
       if (this.state === BotState.Mining) {
@@ -161,7 +161,7 @@ export class MiningEngine {
         // 念のため
         this.state = BotState.Idle;
         // 目的地へ着いたので次の採掘に移行（ある場合）
-        this.scheduleNextMining();
+        await this.scheduleNextMining();
         return;
       }
 
@@ -191,7 +191,7 @@ export class MiningEngine {
         // 完了後は target をクリア
         this.target = null;
         // 次の作業（採掘）があれば開始
-        this.scheduleNextMining();
+        await this.scheduleNextMining();
       }
     } finally {
       this.stepping = false;
@@ -202,21 +202,21 @@ export class MiningEngine {
    * 次のブロック採掘を開始（DigStart）し、Ack を即時処理する簡易実装
    * - 実機では Bedrock Server からの Ack をイベントで受け取る
    */
-  private scheduleNextMining(): void {
-    if (this.miningQueue.length === 0) return;
-    const block = this.miningQueue.shift() as Coord;
-
-    // 採掘開始
-    this.state = BotState.Mining;
-    this.client.queue('player_action', {
-      action: 'start_break',
-      position: { ...block },
-      face: 1
-    });
-
-    // ここでは即時 Ack とみなして処理を進める
-    this.onDigAck();
-  }
+  private async scheduleNextMining(): Promise<void> {
+      if (this.miningQueue.length === 0) return;
+      const block = this.miningQueue.shift() as Coord;
+  
+      // 採掘開始
+      this.state = BotState.Mining;
+      this.client.queue('player_action', {
+        action: 'start_break',
+        position: { ...block },
+        face: 1
+      });
+  
+      // ここでは即時 Ack とみなして処理を進める
+      await this.onDigAck();
+    }
 
   /**
    * DigAck を受け取ったときの処理
@@ -224,13 +224,13 @@ export class MiningEngine {
    * - StateDB の採掘カウント加算
    * - state を Idle へ戻す
    */
-  private onDigAck(): void {
-    // ブロック硬度はテスト容易性のため固定値 1 とする
-    this.toolManager?.notifyUse(1);
-    this.minedBlocks += 1;
-    if (typeof this.stateDB.incrementMined === 'function') {
-      this.stateDB.incrementMined(this.botId, 1);
+  private async onDigAck(): Promise<void> {
+      // ブロック硬度はテスト容易性のため固定値 1 とする
+      this.toolManager?.notifyUse(1);
+      this.minedBlocks += 1;
+      if (typeof this.stateDB.incrementMined === 'function') {
+        await this.stateDB.incrementMined(this.botId, 1);
+      }
+      this.state = BotState.Idle;
     }
-    this.state = BotState.Idle;
-  }
 }

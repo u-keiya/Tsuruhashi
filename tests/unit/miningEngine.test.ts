@@ -144,6 +144,19 @@ describe('MiningEngine - Auto mining loop (Issue #5 US-001-4)', () => {
 
     // 採掘完了後は Idle に戻る
     expect(engine.getState()).to.equal(BotState.Idle);
+    // player_action(start_break)送信時のposition(x,y,z)をアサート
+    const startBreakCall = actionCalls[0];
+    expect(startBreakCall.args[1]).to.have.property('position');
+    expect(startBreakCall.args[1].position).to.have.keys(['x', 'y', 'z']);
+    expect(startBreakCall.args[1].position).to.deep.equal(oneBlock.start);
+
+    // move_player→player_actionの送信順序をアサート
+    const calls = (client.queue as sinon.SinonSpy).getCalls();
+    const moveIdx = calls.findIndex((c) => c.args[0] === 'move_player');
+    const actionIdx = calls.findIndex((c) => c.args[0] === 'player_action');
+    if (moveIdx !== -1 && actionIdx !== -1) {
+      expect(moveIdx).to.be.lessThan(actionIdx, 'move_playerはplayer_actionより前に送信されるべき');
+    }
   });
 
   it('移動完了後に Mining へ遷移し、ブロック単位で DigStart→Ack を処理', async () => {
