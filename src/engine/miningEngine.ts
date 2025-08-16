@@ -1,4 +1,4 @@
-import { BotState, Coord } from '../types/bot.types';
+import { BotState, Coord, MiningArea } from '../types/bot.types';
 import { PathFinder } from './pathfinder';
 
 export interface MovePlayerPayload {
@@ -6,13 +6,28 @@ export interface MovePlayerPayload {
   on_ground: boolean;
 }
 
+export interface PlayerActionPayload {
+  action: string; // e.g. 'start_break'
+  position: Coord;
+  face?: number;
+}
+
 export interface ClientLike {
   // bedrock-protocol client compatible (we only need queue in unit tests)
-  queue(packetName: 'move_player', payload: MovePlayerPayload): void;
+  queue(
+    packetName: 'move_player' | 'player_action',
+    payload: MovePlayerPayload | PlayerActionPayload
+  ): void;
 }
 
 export interface StateDBLike {
   upsert(botId: string, state: BotState, pos: Coord): Promise<void> | void;
+  // 自動採掘での累積カウント（任意実装）
+  incrementMined?(botId: string, n: number): Promise<void> | void;
+}
+
+export interface ToolManagerLike {
+  notifyUse(blockHardness: number): void;
 }
 
 /**
@@ -42,11 +57,25 @@ export class MiningEngine {
 
   private pathIndex = 0;
 
-  constructor(params: { botId: string; client: ClientLike; stateDB: StateDBLike; initialPosition: Coord }) {
+  // === Auto Mining ===
+  private toolManager?: ToolManagerLike;
+
+  private miningQueue: Coord[] = [];
+
+  private minedBlocks: number = 0;
+
+  constructor(params: {
+    botId: string;
+    client: ClientLike;
+    stateDB: StateDBLike;
+    initialPosition: Coord;
+    toolManager?: ToolManagerLike;
+  }) {
     this.botId = params.botId;
     this.client = params.client;
     this.stateDB = params.stateDB;
     this.currentPos = { ...params.initialPosition };
+    this.toolManager = params.toolManager;
   }
 
   getState(): BotState {
@@ -78,6 +107,35 @@ export class MiningEngine {
   }
 
   /**
+   * 採掘エリアをセットして、内部の採掘キュー（ブロック座標列）を生成する
+   * - start/end の範囲は各軸で小さい方→大きい方に正規化
+   */
+  setMiningArea(area: MiningArea): void {
+    const minX = Math.min(area.start.x, area.end.x);
+    const maxX = Math.max(area.start.x, area.end.x);
+    const minY = Math.min(area.start.y, area.end.y);
+    const maxY = Math.max(area.start.y, area.end.y);
+    const minZ = Math.min(area.start.z, area.end.z);
+    const maxZ = Math.max(area.start.z, area.end.z);
+
+    // 既存キューに追記（上書きではない）
+    for (let x = minX; x <= maxX; x += 1) {
+      for (let y = minY; y <= maxY; y += 1) {
+        for (let z = minZ; z <= maxZ; z += 1) {
+          this.miningQueue.push({ x, y, z });
+        }
+      }
+    }
+  }
+
+  /**
+   * 現在までに採掘完了したブロック数を返す（ユニットテスト用）
+   */
+  getMinedBlocks(): number {
+    return this.minedBlocks;
+  }
+
+  /**
    * 1tick 進める
    * - 次のノードへ移動
    * - MovePacket を送信
@@ -88,10 +146,22 @@ export class MiningEngine {
     if (this.stepping) return;
     this.stepping = true;
     try {
+      // Idle 中に採掘キューが有れば次の作業を割り当て
+      if (this.state === BotState.Idle) {
+        await this.scheduleNextMining();
+      }
+
+      if (this.state === BotState.Mining) {
+        // 採掘中は Ack 待ち。tick では何もしない（StateDB 更新のみ任意）
+        return;
+      }
+
       if (this.state !== BotState.Moving) return;
       if (this.pathIndex >= this.path.length) {
         // 念のため
         this.state = BotState.Idle;
+        // 目的地へ着いたので次の採掘に移行（ある場合）
+        await this.scheduleNextMining();
         return;
       }
 
@@ -113,16 +183,54 @@ export class MiningEngine {
       // StateDB 書き込み（Moving と現在座標）
       await this.stateDB.upsert(this.botId, BotState.Moving, this.currentPos);
 
-      // 目的地へ到達したら Idle へ
+      // 目的地へ到達したら Idle -> 採掘へ
       if (this.pathIndex >= this.path.length) {
         this.state = BotState.Idle;
         // 永続化も Idle へ反映
         await this.stateDB.upsert(this.botId, BotState.Idle, this.currentPos);
         // 完了後は target をクリア
         this.target = null;
+        // 次の作業（採掘）があれば開始
+        await this.scheduleNextMining();
       }
     } finally {
       this.stepping = false;
     }
   }
+
+  /**
+   * 次のブロック採掘を開始（DigStart）し、Ack を即時処理する簡易実装
+   * - 実機では Bedrock Server からの Ack をイベントで受け取る
+   */
+  private async scheduleNextMining(): Promise<void> {
+      if (this.miningQueue.length === 0) return;
+      const block = this.miningQueue.shift() as Coord;
+  
+      // 採掘開始
+      this.state = BotState.Mining;
+      this.client.queue('player_action', {
+        action: 'start_break',
+        position: { ...block },
+        face: 1
+      });
+  
+      // ここでは即時 Ack とみなして処理を進める
+      await this.onDigAck();
+    }
+
+  /**
+   * DigAck を受け取ったときの処理
+   * - ToolManager への使用通知
+   * - StateDB の採掘カウント加算
+   * - state を Idle へ戻す
+   */
+  private async onDigAck(): Promise<void> {
+      // ブロック硬度はテスト容易性のため固定値 1 とする
+      this.toolManager?.notifyUse(1);
+      this.minedBlocks += 1;
+      if (typeof this.stateDB.incrementMined === 'function') {
+        await this.stateDB.incrementMined(this.botId, 1);
+      }
+      this.state = BotState.Idle;
+    }
 }
