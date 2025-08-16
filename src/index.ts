@@ -15,6 +15,7 @@ app.post('/bots/summon', (req, res) => botController.summonBot(req, res));
 app.get('/bots/:id', (req, res) => botController.getBot(req, res));
 app.delete('/bots/:id', (req, res) => botController.deleteBot(req, res));
 app.get('/bots', (req, res) => botController.getAllBots(req, res));
+app.post('/bots/:id/area', (req, res) => botController.setMiningArea(req, res));
 
 // サーバーの起動
 app.listen(port, () => {
