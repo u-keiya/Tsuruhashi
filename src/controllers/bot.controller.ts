@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import BotService from '../services/bot.service';
+import BotService, { BOT_COUNT_RANGE_ERROR } from '../services/bot.service';
 import { SummonBotRequest, MiningArea, DeleteBotRequest } from '../types/bot.types';
 
 /**
@@ -20,19 +20,28 @@ export default class BotController {
   async summonBot(req: Request, res: Response): Promise<void> {
     try {
       const { playerId } = req.body as SummonBotRequest;
+      const rawCount = (req.body as SummonBotRequest).count;
+      const count = rawCount === undefined ? 1 : Number(rawCount);
 
       if (!playerId) {
         res.status(400).json({ error: 'playerId is required' });
         return;
       }
 
-      const bot = await this.botService.summonBot(playerId);
-      res.status(201).json(bot);
+      if (!Number.isFinite(count) || !Number.isInteger(count) || count < 1 || count > 10) {
+        res.status(400).json({ error: BOT_COUNT_RANGE_ERROR });
+        return;
+      }
+
+      const bots = await this.botService.summonBot(playerId, count);
+      res.status(201).json(bots);
 
     } catch (error) {
       // console.error('Error in summonBot:', error);
       if (error instanceof Error && error.message === 'Permission denied') {
         res.status(403).json({ error: 'Permission denied' });
+      } else if (error instanceof Error && error.message === BOT_COUNT_RANGE_ERROR) {
+        res.status(400).json({ error: BOT_COUNT_RANGE_ERROR });
       } else {
         res.status(500).json({ error: 'Failed to summon bot' });
       }

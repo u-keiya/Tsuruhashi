@@ -1,6 +1,10 @@
 import Bot from '../models/bot.model';
 import { BotSummary, MiningArea } from '../types/bot.types';
 import DeletionManager from '../engine/deletionManager';
+/**
+ * Bot数バリデーション共通エラーメッセージ
+ */
+export const BOT_COUNT_RANGE_ERROR = 'Bot count must be between 1 and 10';
 
 /**
  * Botのサービスクラス
@@ -19,17 +23,41 @@ export default class BotService {
   /**
    * 新しいBotをサモンする
    * @param playerId プレイヤーID
-   * @returns BotSummary Botの概要情報
+   * @param count 生成するBot数（デフォルト: 1）
+   * @returns BotSummary[] Botの概要情報配列
    * @throws Error 接続に失敗した場合
    */
-  async summonBot(playerId: string): Promise<BotSummary> {
-    const bot = new Bot();
-    await bot.connect(playerId);
-      
-    const summary = bot.getSummary();
-    this.bots.set(summary.id, bot);
-      
-    return summary;
+  async summonBot(playerId: string, count: number = 1): Promise<BotSummary[]> {
+    if (!Number.isFinite(count) || !Number.isInteger(count) || count < 1 || count > 10) {
+      throw new Error(BOT_COUNT_RANGE_ERROR);
+    }
+
+    const bots: Bot[] = Array.from({ length: count }, () => new Bot());
+    const summaries: BotSummary[] = new Array(count);
+
+    try {
+      await Promise.all(
+        bots.map(async (bot, idx) => {
+          await bot.connect(playerId);
+          summaries[idx] = bot.getSummary();
+        })
+      );
+      // すべて成功したら初めて登録（原子化）
+      summaries.forEach((s, idx) => {
+        this.bots.set(s.id, bots[idx]);
+      });
+      return summaries;
+    } catch (e) {
+      // 部分成功時は後始末
+      bots.forEach(bot => {
+        try {
+          bot.disconnect();
+        } catch {
+          /* noop */
+        }
+      });
+      throw e instanceof Error ? e : new Error('Failed to summon bots');
+    }
   }
 
   /**

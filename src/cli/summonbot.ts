@@ -5,18 +5,21 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080';
 
-async function summonBot(playerId: string): Promise<void> {
+async function summonBot(playerId: string, count: number = 1): Promise<void> {
   try {
-    const response = await axios.post(`${API_BASE_URL}/bots/summon`, { playerId });
+    const response = await axios.post(
+      `${API_BASE_URL}/bots/summon`,
+      { playerId, count }
+    );
     
     if (response.status === 201) {
-      const bot = response.data;
+      const bots: Array<{ id: string; state: string }> = response.data;
       // eslint-disable-next-line no-console
-      console.log('Bot successfully summoned!');
-      // eslint-disable-next-line no-console
-      console.log(`Bot ID: ${bot.id}`);
-      // eslint-disable-next-line no-console
-      console.log(`State: ${bot.state}`);
+      console.log(`Bots successfully summoned! count=${bots.length}`);
+      bots.forEach((b, i) => {
+        // eslint-disable-next-line no-console
+        console.log(`[${i}] Bot ID: ${b.id} / State: ${b.state}`);
+      });
     }
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -36,14 +39,21 @@ yargs(hideBin(process.argv))
     'summon',
     'Summon a new bot',
     (y) =>
-      y.option('player-id', {
-        alias: 'p',
-        type: 'string',
-        description: 'Player ID',
-        demandOption: true
-      }),
+      y
+        .option('player-id', {
+          alias: 'p',
+          type: 'string',
+          description: 'Player ID',
+          demandOption: true
+        })
+        .option('count', {
+          alias: 'c',
+          type: 'number',
+          description: 'Number of bots to summon',
+          default: 1
+        }),
     async (argv) => {
-      await summonBot(argv['player-id']);
+      await summonBot(argv['player-id'], argv.count as number);
     }
   )
   .demandCommand(1, 'You must specify a command')

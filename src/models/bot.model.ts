@@ -35,10 +35,14 @@ export default class Bot {
   async connect(playerId: string): Promise<void> {
     this.ownerPlayerId = playerId;
     try {
+      // 複数Bot同時接続時のユーザー名重複を避けるため、タイムスタンプを追加
+      const timestamp = Date.now().toString(36);
+      const uniqueUsername = `Bot-${this.id.slice(0, 6)}-${timestamp.slice(-4)}`;
+      
       this.client = await createClient({
         host: 'localhost',
         port: 19132,
-        username: `Bot-${this.id.slice(0, 8)}`,
+        username: uniqueUsername,
         offline: true
       });
 
