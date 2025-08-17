@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { MiningEngine, ClientLike, StateDBLike, ToolManagerLike, ChatNotifierLike } from '../../src/engine/miningEngine';
+import { MiningEngine, ClientLike, StateDBLike, ToolManagerLike } from '../../src/engine/miningEngine';
 import { BotState, Coord, MiningArea } from '../../src/types/bot.types';
 
 describe('MiningEngine', () => {
@@ -252,7 +252,7 @@ describe('MiningEngine - Auto mining loop (Issue #5 US-001-4)', () => {
       engine.stopDig();
 
       // Assert
-      expect(engine.isMiningstopped()).to.be.true;
+      expect(engine.isMiningStopped()).to.be.true;
       expect(engine.getState()).to.equal(BotState.Idle);
 
       // 停止後は採掘が実行されない

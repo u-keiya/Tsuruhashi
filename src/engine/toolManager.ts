@@ -1,11 +1,9 @@
+import { ChatNotifierLike } from './ports';
+
 export interface Tool {
   id: string;
   durability: number;
   maxDurability: number;
-}
-
-export interface ChatNotifierLike {
-  sendMessage(message: string): void;
 }
 
 export interface MiningEngineLike {
@@ -41,6 +39,15 @@ export class ToolManager {
    */
   notifyUse(blockHardness: number): void {
     if (!this.currentTool) {
+      return;
+    }
+
+    // 無効な減衰量は無視
+    if (!Number.isFinite(blockHardness) || blockHardness <= 0) {
+      return;
+    }
+    // すでに破損済みなら何もしない（重複停止/通知の抑止）
+    if (this.currentTool.durability <= 0) {
       return;
     }
 

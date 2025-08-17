@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { ToolManager, Tool, ChatNotifierLike, MiningEngineLike } from '../../src/engine/toolManager';
+import { ToolManager, Tool, MiningEngineLike } from '../../src/engine/toolManager';
+import { ChatNotifierLike } from '../../src/engine/ports';
 
 describe('ToolManager', () => {
   let toolManager: ToolManager;
@@ -75,7 +76,7 @@ describe('ToolManager', () => {
 
       // Assert
       expect(mockMiningEngine.stopDig.calledOnce).to.be.true;
-      expect(mockChatNotifier.sendMessage.calledWith('ツール切れで停止')).to.be.true;
+      expect(mockChatNotifier.sendMessage.calledOnceWith('ツール切れで停止')).to.be.true;
     });
 
     it('should handle case when durability goes from 1 to 0', () => {

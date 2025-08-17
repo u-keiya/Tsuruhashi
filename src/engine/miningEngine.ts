@@ -1,5 +1,6 @@
 import { BotState, Coord, MiningArea } from '../types/bot.types';
 import { PathFinder } from './pathfinder';
+import { ChatNotifierLike } from './ports';
 
 export interface MovePlayerPayload {
   position: Coord;
@@ -38,9 +39,6 @@ export interface ToolManagerLike {
   notifyUse(blockHardness: number): void;
 }
 
-export interface ChatNotifierLike {
-  sendMessage(message: string): void;
-}
 
 /**
  * MiningEngine
@@ -165,7 +163,7 @@ export class MiningEngine {
   /**
    * 停止状態を確認
    */
-  isMiningstopped(): boolean {
+  isMiningStopped(): boolean {
     return this.isStopped;
   }
 

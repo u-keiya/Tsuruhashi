@@ -1,10 +1,11 @@
 import { ClientLike, TextPayload } from './miningEngine';
+import { ChatNotifierLike } from './ports';
 
 /**
  * ChatNotifier
  * - Minecraftサーバーにチャットメッセージを送信
  */
-export default class ChatNotifier {
+export default class ChatNotifier implements ChatNotifierLike {
   private readonly client: ClientLike;
 
   constructor(client: ClientLike) {
