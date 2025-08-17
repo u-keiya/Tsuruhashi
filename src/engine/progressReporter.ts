@@ -39,7 +39,7 @@ export default class ProgressReporter {
       const message = ProgressReporter.formatMessage(metrics);
       this.chatNotifier.sendMessage(message);
     } catch (error) {
-      // console.error('Failed to report progress:', error);
+      console.error('Failed to report progress:', error);
     }
   }
 

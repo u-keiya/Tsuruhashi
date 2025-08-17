@@ -38,7 +38,7 @@ export default class Scheduler {
       try {
         await callback();
       } catch (error) {
-        // console.error('Scheduler callback failed:', error);
+        console.error('Scheduler callback failed:', error);
         this.stop(); // 無限ループ回避
       }
     }, this.intervalMs);
