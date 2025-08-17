@@ -1,5 +1,6 @@
 import Bot from '../models/bot.model';
 import { BotSummary, MiningArea } from '../types/bot.types';
+import DeletionManager from '../engine/deletionManager';
 
 /**
  * Botのサービスクラス
@@ -8,8 +9,11 @@ import { BotSummary, MiningArea } from '../types/bot.types';
 export default class BotService {
   private bots: Map<string, Bot>;
 
+  private deletionManager: DeletionManager;
+
   constructor() {
     this.bots = new Map();
+    this.deletionManager = new DeletionManager();
   }
 
   /**
@@ -38,15 +42,21 @@ export default class BotService {
   }
 
   /**
-   * 指定したIDのBotを削除する
+   * 指定したIDのBotを削除する（物理削除）
    * @param botId BotのID
+   * @param deletedBy 削除を実行したユーザー（管理者）
    */
-  deleteBot(botId: string): void {
+  async deleteBot(botId: string, deletedBy?: string): Promise<void> {
     const bot = this.bots.get(botId);
-    if (bot) {
-      bot.disconnect();
-      this.bots.delete(botId);
+    if (!bot) {
+      throw new Error('BotNotFound');
     }
+
+    // DeletionManagerを使用して物理削除を実行
+    await this.deletionManager.deleteBot(bot, deletedBy);
+    
+    // メモリ上のBotインスタンスを削除
+    this.bots.delete(botId);
   }
 
   /**

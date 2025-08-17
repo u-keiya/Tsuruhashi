@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import BotService from '../services/bot.service';
-import { SummonBotRequest, MiningArea } from '../types/bot.types';
+import { SummonBotRequest, MiningArea, DeleteBotRequest } from '../types/bot.types';
 
 /**
  * Botのコントローラークラス
@@ -56,20 +56,58 @@ export default class BotController {
   }
 
   /**
-   * 指定したIDのBotを削除する
+   * 指定したIDのBotを削除する（物理削除）
    * DELETE /bots/:id
+   * US-005: 管理者権限が必要
    */
-  deleteBot(req: Request, res: Response): void {
-    const { id } = req.params;
-    const bot = this.botService.getBot(id);
+  async deleteBot(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      // 管理者権限チェック
+      const deleteRequest = BotController.extractDeleteRequest(req);
+      if (!deleteRequest.isAdmin) {
+        res.status(403).json({ error: 'Forbidden – requires Admin role' });
+        return;
+      }
 
-    if (!bot) {
-      res.status(404).json({ error: 'Bot not found' });
-      return;
+      // Botの存在確認
+      const bot = this.botService.getBot(id);
+      if (!bot) {
+        res.status(404).json({ error: 'Not Found' });
+        return;
+      }
+
+      // 物理削除を実行
+      await this.botService.deleteBot(id, deleteRequest.userId);
+      res.status(204).send();
+
+    } catch (error) {
+      // console.error('Error in deleteBot:', error);
+      if (error instanceof Error && error.message === 'BotNotFound') {
+        res.status(404).json({ error: 'Not Found' });
+      } else {
+        res.status(500).json({ error: 'Failed to delete bot' });
+      }
     }
+  }
 
-    this.botService.deleteBot(id);
-    res.status(204).send();
+  /**
+   * リクエストから削除権限情報を抽出する
+   * TODO: 実際の認証システム実装時に更新
+   * @param req Express Request
+   * @returns DeleteBotRequest
+   */
+  private static extractDeleteRequest(req: Request): DeleteBotRequest {
+    // TODO: 実際の認証ヘッダーやJWTトークンから権限を取得
+    // 現在はテスト用にヘッダーから簡易的に取得
+    const isAdmin = req.headers['x-admin-role'] === 'true';
+    const userId = req.headers['x-user-id'] as string;
+    
+    return {
+      isAdmin,
+      userId
+    };
   }
 
   /**

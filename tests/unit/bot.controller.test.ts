@@ -175,4 +175,127 @@ describe('BotController', () => {
       })).to.be.true;
     });
   });
+
+  describe('deleteBot', () => {
+    let sendStub: sinon.SinonStub;
+
+    beforeEach(() => {
+      sendStub = sinon.stub();
+      (res as any).send = sendStub;
+      sendStub.returns(res);
+      statusStub.returns(res);
+    });
+
+    it('should return 204 when bot is deleted successfully by admin', async () => {
+      const botId = 'bot-123';
+      const mockBot = { getSummary: () => ({ id: botId, state: 'Idle' }) };
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'getBot').returns(mockBot as any);
+      sinon.stub(botService, 'deleteBot').resolves();
+
+      await botController.deleteBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(204)).to.be.true;
+      expect(sendStub.calledOnce).to.be.true;
+    });
+
+    it('should return 403 when user is not admin', async () => {
+      const botId = 'bot-123';
+
+      // 非管理者のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'false',
+          'x-user-id': 'regular-user'
+        }
+      };
+
+      await botController.deleteBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(403)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'Forbidden – requires Admin role'
+      })).to.be.true;
+    });
+
+    it('should return 404 when bot is not found', async () => {
+      const botId = 'non-existent-bot';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'getBot').returns(undefined);
+
+      await botController.deleteBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(404)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'Not Found'
+      })).to.be.true;
+    });
+
+    it('should return 500 when deletion fails', async () => {
+      const botId = 'bot-123';
+      const mockBot = { getSummary: () => ({ id: botId, state: 'Idle' }) };
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'getBot').returns(mockBot as any);
+      sinon.stub(botService, 'deleteBot').rejects(new Error('Deletion failed'));
+
+      await botController.deleteBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(500)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'Failed to delete bot'
+      })).to.be.true;
+    });
+
+    it('should return 404 when service throws BotNotFound error', async () => {
+      const botId = 'bot-123';
+      const mockBot = { getSummary: () => ({ id: botId, state: 'Idle' }) };
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'getBot').returns(mockBot as any);
+      sinon.stub(botService, 'deleteBot').rejects(new Error('BotNotFound'));
+
+      await botController.deleteBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(404)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'Not Found'
+      })).to.be.true;
+    });
+  });
 });
