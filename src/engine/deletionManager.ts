@@ -61,22 +61,20 @@ export default class DeletionManager extends EventEmitter {
    * State Store(SQLite)からBotレコードを削除
    * @param botId BotのID
    */
-  private static async removeBotRecord(botId: string): Promise<void> {
+  private static async removeBotRecord(_botId: string): Promise<void> {
     // TODO: SQLite実装時に実際のDB削除処理を追加
-    // console.log(`Removing bot record from database: ${botId}`);
+    // console.log(`Removing bot record from database: ${_botId}`);
     // Suppress unused parameter warning
-    botId;
   }
 
   /**
    * Botのインベントリファイルを物理削除
    * @param botId BotのID
    */
-  private static async deleteInventoryFiles(botId: string): Promise<void> {
+  private static async deleteInventoryFiles(_botId: string): Promise<void> {
     // TODO: 実際のファイルシステム操作を実装
-    // console.log(`Deleting inventory files for bot: ${botId}`);
+    // console.log(`Deleting inventory files for bot: ${_botId}`);
     // Suppress unused parameter warning
-    botId;
   }
 
   /**
