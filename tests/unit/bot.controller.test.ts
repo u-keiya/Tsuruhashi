@@ -35,7 +35,7 @@ describe('BotController', () => {
   });
 
   describe('summonBot', () => {
-    it('should successfully summon a bot and return 201 status', async () => {
+    it('should successfully summon a single bot and return 201 status', async () => {
       const playerId = 'validPlayer';
       const botId = 'test-bot-id';
       
@@ -43,17 +43,78 @@ describe('BotController', () => {
         body: { playerId }
       };
 
-      sinon.stub(botService, 'summonBot').resolves({
+      sinon.stub(botService, 'summonBot').resolves([{
         id: botId,
         state: BotState.Idle
-      });
+      }]);
 
       await botController.summonBot(req as Request, res as Response);
 
       expect(statusStub.calledWith(201)).to.be.true;
-      expect(jsonStub.calledWith({
+      expect(jsonStub.calledWith([{
         id: botId,
         state: BotState.Idle
+      }])).to.be.true;
+    });
+
+    it('should successfully summon multiple bots and return 201 status', async () => {
+      const playerId = 'validPlayer';
+      const count = 3;
+      const mockBots = [
+        { id: 'bot-1', state: BotState.Idle },
+        { id: 'bot-2', state: BotState.Idle },
+        { id: 'bot-3', state: BotState.Idle }
+      ];
+      
+      req = {
+        body: { playerId, count }
+      };
+
+      const summonStub = sinon.stub(botService, 'summonBot').resolves(mockBots);
+
+      await botController.summonBot(req as Request, res as Response);
+
+      expect(summonStub.calledWith(playerId, count)).to.be.true;
+      expect(statusStub.calledWith(201)).to.be.true;
+      expect(jsonStub.calledWith(mockBots)).to.be.true;
+    });
+
+    it('should return 400 when playerId is missing', async () => {
+      req = {
+        body: {}
+      };
+
+      await botController.summonBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(400)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'playerId is required'
+      })).to.be.true;
+    });
+
+    it('should return 400 when count is too low', async () => {
+      req = {
+        body: { playerId: 'validPlayer', count: 0 }
+      };
+
+      await botController.summonBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(400)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'count must be between 1 and 10'
+      })).to.be.true;
+    });
+
+    it('should return 400 when count is too high', async () => {
+      req = {
+        body: { playerId: 'validPlayer', count: 11 }
+      };
+
+      await botController.summonBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(400)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'count must be between 1 and 10'
       })).to.be.true;
     });
 
@@ -71,6 +132,40 @@ describe('BotController', () => {
       expect(statusStub.calledWith(403)).to.be.true;
       expect(jsonStub.calledWith({
         error: 'Permission denied'
+      })).to.be.true;
+    });
+
+    it('should return 400 when service throws bot count validation error', async () => {
+      const playerId = 'validPlayer';
+      
+      req = {
+        body: { playerId, count: 5 }
+      };
+
+      sinon.stub(botService, 'summonBot').rejects(new Error('Bot count must be between 1 and 10'));
+
+      await botController.summonBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(400)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'Bot count must be between 1 and 10'
+      })).to.be.true;
+    });
+
+    it('should return 500 for other errors', async () => {
+      const playerId = 'validPlayer';
+      
+      req = {
+        body: { playerId }
+      };
+
+      sinon.stub(botService, 'summonBot').rejects(new Error('Connection failed'));
+
+      await botController.summonBot(req as Request, res as Response);
+
+      expect(statusStub.calledWith(500)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: 'Failed to summon bot'
       })).to.be.true;
     });
   });

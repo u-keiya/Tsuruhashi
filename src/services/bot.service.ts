@@ -19,17 +19,30 @@ export default class BotService {
   /**
    * 新しいBotをサモンする
    * @param playerId プレイヤーID
-   * @returns BotSummary Botの概要情報
+   * @param count 生成するBot数（デフォルト: 1）
+   * @returns BotSummary[] Botの概要情報配列
    * @throws Error 接続に失敗した場合
    */
-  async summonBot(playerId: string): Promise<BotSummary> {
-    const bot = new Bot();
-    await bot.connect(playerId);
-      
-    const summary = bot.getSummary();
-    this.bots.set(summary.id, bot);
-      
-    return summary;
+  async summonBot(playerId: string, count: number = 1): Promise<BotSummary[]> {
+    if (count < 1 || count > 10) {
+      throw new Error('Bot count must be between 1 and 10');
+    }
+
+    const summaries: BotSummary[] = [];
+    const promises: Promise<void>[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const bot = new Bot();
+      const promise = bot.connect(playerId).then(() => {
+        const summary = bot.getSummary();
+        this.bots.set(summary.id, bot);
+        summaries.push(summary);
+      });
+      promises.push(promise);
+    }
+
+    await Promise.all(promises);
+    return summaries;
   }
 
   /**

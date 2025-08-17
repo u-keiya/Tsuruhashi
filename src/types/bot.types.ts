@@ -26,6 +26,7 @@ export interface BotSummary {
  */
 export interface SummonBotRequest {
   playerId: string;
+  count?: number; // 複数Bot生成用のカウント（デフォルト: 1）
 }
 
 /**

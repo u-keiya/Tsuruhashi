@@ -19,20 +19,27 @@ export default class BotController {
    */
   async summonBot(req: Request, res: Response): Promise<void> {
     try {
-      const { playerId } = req.body as SummonBotRequest;
+      const { playerId, count = 1 } = req.body as SummonBotRequest;
 
       if (!playerId) {
         res.status(400).json({ error: 'playerId is required' });
         return;
       }
 
-      const bot = await this.botService.summonBot(playerId);
-      res.status(201).json(bot);
+      if (count < 1 || count > 10) {
+        res.status(400).json({ error: 'count must be between 1 and 10' });
+        return;
+      }
+
+      const bots = await this.botService.summonBot(playerId, count);
+      res.status(201).json(bots);
 
     } catch (error) {
       // console.error('Error in summonBot:', error);
       if (error instanceof Error && error.message === 'Permission denied') {
         res.status(403).json({ error: 'Permission denied' });
+      } else if (error instanceof Error && error.message === 'Bot count must be between 1 and 10') {
+        res.status(400).json({ error: 'Bot count must be between 1 and 10' });
       } else {
         res.status(500).json({ error: 'Failed to summon bot' });
       }
