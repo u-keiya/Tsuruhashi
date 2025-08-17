@@ -223,4 +223,82 @@ describe('MiningEngine - Auto mining loop (Issue #5 US-001-4)', () => {
     const actionIdx = calls.findIndex((c) => c.args[0] === 'player_action');
     expect(lastMoveIdx).to.be.lessThan(actionIdx, 'player_action は移動完了後に送られるべき');
   });
+
+  describe('stopDig', () => {
+    it('should stop mining and clear mining queue', async () => {
+      // Arrange
+      const testClient = {
+        queue: sinon.spy(),
+      } as unknown as ClientLike & { queue: sinon.SinonSpy };
+
+      const testStateDB = {
+        upsert: sinon.spy(),
+      } as unknown as StateDBLike & { upsert: sinon.SinonSpy };
+
+      const engine = new MiningEngine({
+        botId: 'test-bot',
+        client: testClient,
+        stateDB: testStateDB,
+        initialPosition: { x: 0, y: 0, z: 0 }
+      });
+
+      const area: MiningArea = {
+        start: { x: 1, y: 1, z: 1 },
+        end: { x: 2, y: 1, z: 1 }
+      };
+      engine.setMiningArea(area);
+
+      // Act
+      engine.stopDig();
+
+      // Assert
+      expect(engine.isMiningStopped()).to.be.true;
+      expect(engine.getState()).to.equal(BotState.Idle);
+
+      // 停止後は採掘が実行されない
+      await engine.step();
+      expect(engine.getState()).to.equal(BotState.Idle);
+      
+      // player_action が送信されていないことを確認
+      const actionCalls = (testClient.queue as sinon.SinonSpy).getCalls().filter((c) => c.args[0] === 'player_action');
+      expect(actionCalls.length).to.equal(0);
+    });
+
+    it('should prevent new mining after stopDig is called', async () => {
+      // Arrange
+      const testClient = {
+        queue: sinon.spy(),
+      } as unknown as ClientLike & { queue: sinon.SinonSpy };
+
+      const testStateDB = {
+        upsert: sinon.spy(),
+      } as unknown as StateDBLike & { upsert: sinon.SinonSpy };
+
+      const engine = new MiningEngine({
+        botId: 'test-bot',
+        client: testClient,
+        stateDB: testStateDB,
+        initialPosition: { x: 0, y: 0, z: 0 }
+      });
+
+      // Act
+      engine.stopDig();
+      
+      const area: MiningArea = {
+        start: { x: 1, y: 1, z: 1 },
+        end: { x: 1, y: 1, z: 1 }
+      };
+      engine.setMiningArea(area);
+
+      await engine.step();
+
+      // Assert
+      expect(engine.getState()).to.equal(BotState.Idle);
+      expect(engine.getMinedBlocks()).to.equal(0);
+      
+      // player_action が送信されていないことを確認
+      const actionCalls = (testClient.queue as sinon.SinonSpy).getCalls().filter((c) => c.args[0] === 'player_action');
+      expect(actionCalls.length).to.equal(0);
+    });
+  });
 });
