@@ -31,7 +31,7 @@ export default class BotService {
     const summaries: BotSummary[] = [];
     const promises: Promise<void>[] = [];
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i+=1) {
       const bot = new Bot();
       const promise = bot.connect(playerId).then(() => {
         const summary = bot.getSummary();
