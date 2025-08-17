@@ -44,6 +44,40 @@ describe('BotService', () => {
 
     // Note: Bot constructor mocking is complex due to bedrock-protocol dependency
     // The validation logic is tested above, and integration tests would verify actual Bot creation
+    it('should summon N bots and return summaries (happy path)', async () => {
+      const playerId = 'player-1';
+      const count = 3;
+
+      let botIdx = 0;
+      // connectが呼ばれるたびに、インスタンスにユニークなインデックスを付与
+      sinon.stub(Bot.prototype, 'connect').callsFake(async function () {
+        // @ts-ignore
+        this._testIdx = botIdx++;
+        return Promise.resolve();
+      });
+
+      // getSummaryは、インスタンスに付与されたインデックスを使ってIDを生成
+      sinon.stub(Bot.prototype, 'getSummary').callsFake(function () {
+        // @ts-ignore
+        return { id: `bot-${this._testIdx}`, state: BotState.Idle };
+      });
+
+      // disconnectはそのまま
+      sinon.stub(Bot.prototype, 'disconnect').resolves();
+
+      const result = await botService.summonBot(playerId, count);
+
+      expect(result).to.have.length(count);
+      expect((botService as any).bots.size).to.equal(count);
+
+      // 結果のIDが順不同で正しいことを確認
+      const resultIds = result.map(s => s.id).sort();
+      expect(resultIds).to.deep.equal(['bot-0', 'bot-1', 'bot-2']);
+
+      // サービスに登録されたBotのIDも確認
+      const botIds = Array.from((botService as any).bots.keys()).sort();
+      expect(botIds).to.deep.equal(['bot-0', 'bot-1', 'bot-2']);
+    });
   });
 
   describe('getBot', () => {

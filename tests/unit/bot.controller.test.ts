@@ -43,13 +43,14 @@ describe('BotController', () => {
         body: { playerId }
       };
 
-      sinon.stub(botService, 'summonBot').resolves([{
+      const summonStub = sinon.stub(botService, 'summonBot').resolves([{
         id: botId,
         state: BotState.Idle
       }]);
 
       await botController.summonBot(req as Request, res as Response);
 
+      expect(summonStub.calledOnceWithExactly(playerId, 1)).to.be.true;
       expect(statusStub.calledWith(201)).to.be.true;
       expect(jsonStub.calledWith([{
         id: botId,
@@ -74,7 +75,7 @@ describe('BotController', () => {
 
       await botController.summonBot(req as Request, res as Response);
 
-      expect(summonStub.calledWith(playerId, count)).to.be.true;
+      expect(summonStub.calledOnceWithExactly(playerId, count)).to.be.true;
       expect(statusStub.calledWith(201)).to.be.true;
       expect(jsonStub.calledWith(mockBots)).to.be.true;
     });
@@ -84,12 +85,14 @@ describe('BotController', () => {
         body: {}
       };
 
+      const summonSpy = sinon.spy(botService, 'summonBot');
       await botController.summonBot(req as Request, res as Response);
 
       expect(statusStub.calledWith(400)).to.be.true;
       expect(jsonStub.calledWith({
         error: 'playerId is required'
       })).to.be.true;
+      expect(summonSpy.notCalled).to.be.true;
     });
 
     it('should return 400 when count is too low', async () => {
@@ -97,12 +100,14 @@ describe('BotController', () => {
         body: { playerId: 'validPlayer', count: 0 }
       };
 
+      const summonSpy = sinon.spy(botService, 'summonBot');
       await botController.summonBot(req as Request, res as Response);
 
       expect(statusStub.calledWith(400)).to.be.true;
       expect(jsonStub.calledWith({
         error: 'count must be between 1 and 10'
       })).to.be.true;
+      expect(summonSpy.notCalled).to.be.true;
     });
 
     it('should return 400 when count is too high', async () => {
@@ -110,12 +115,14 @@ describe('BotController', () => {
         body: { playerId: 'validPlayer', count: 11 }
       };
 
+      const summonSpy = sinon.spy(botService, 'summonBot');
       await botController.summonBot(req as Request, res as Response);
 
       expect(statusStub.calledWith(400)).to.be.true;
       expect(jsonStub.calledWith({
         error: 'count must be between 1 and 10'
       })).to.be.true;
+      expect(summonSpy.notCalled).to.be.true;
     });
 
     it('should return 403 when player has insufficient permissions', async () => {

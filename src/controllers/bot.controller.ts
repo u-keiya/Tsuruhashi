@@ -19,14 +19,16 @@ export default class BotController {
    */
   async summonBot(req: Request, res: Response): Promise<void> {
     try {
-      const { playerId, count = 1 } = req.body as SummonBotRequest;
+      const { playerId } = req.body as SummonBotRequest;
+      const rawCount = (req.body as SummonBotRequest).count;
+      const count = rawCount === undefined ? 1 : Number(rawCount);
 
       if (!playerId) {
         res.status(400).json({ error: 'playerId is required' });
         return;
       }
 
-      if (count < 1 || count > 10) {
+      if (!Number.isFinite(count) || !Number.isInteger(count) || count < 1 || count > 10) {
         res.status(400).json({ error: 'count must be between 1 and 10' });
         return;
       }
