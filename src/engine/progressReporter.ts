@@ -35,21 +35,21 @@ export default class ProgressReporter {
   async tick(): Promise<void> {
     try {
       const stats = await this.stateDB.getMiningStats(this.botId);
-      const metrics = this.calculateMetrics(stats);
+      const metrics = ProgressReporter.calculateMetrics(stats);
       const message = ProgressReporter.formatMessage(metrics);
       this.chatNotifier.sendMessage(message);
     } catch (error) {
-      console.error('Failed to report progress:', error);
+      // console.error('Failed to report progress:', error);
     }
   }
 
   /**
    * 統計情報からメトリクスを計算
    */
-  private calculateMetrics(stats: MiningStats): ProgressMetrics {
+  private static calculateMetrics(stats: MiningStats): ProgressMetrics {
     // 進捗率の計算（Y座標ベース）
     const totalDistance = Math.abs(stats.targetY - stats.currentY);
-    const progress = totalDistance === 0 ? 100 : 
+    const progress = totalDistance === 0 ? 100 :
       Math.min(100, Math.max(0, (1 - totalDistance / Math.abs(stats.targetY)) * 100));
 
     return {

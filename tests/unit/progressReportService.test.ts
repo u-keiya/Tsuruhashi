@@ -58,7 +58,8 @@ describe('ProgressReportService', () => {
       clock.tick(1000);
       
       // Promise.resolveを使って非同期処理を同期的に処理
-      await clock.runAllAsync();
+      // runAllAsync() が完了するまでマイクロタスクの実行を待機
+      await Promise.resolve();
       
       expect(mockStateDB.getMiningStats.calledWith('test-bot-id')).to.be.true;
       expect(mockChatNotifier.sendMessage.calledOnce).to.be.true;

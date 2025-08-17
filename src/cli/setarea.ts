@@ -15,6 +15,7 @@ async function setArea(botId: string, area: MiningArea): Promise<void> {
     });
 
     if (resp.status === 202) {
+      // eslint-disable-next-line no-console
       console.log('Area set');
       return;
     }
@@ -25,12 +26,15 @@ async function setArea(botId: string, area: MiningArea): Promise<void> {
       (resp.data && resp.data.error && resp.data.error.message) ||
       resp.statusText ||
       'Failed';
+    // eslint-disable-next-line no-console
     console.error(`Failed to set area: ${code} ${message}`);
     process.exit(1);
   } catch (e) {
     if (axios.isAxiosError(e)) {
+      // eslint-disable-next-line no-console
       console.error('HTTP error:', e.response?.data || e.message);
     } else {
+      // eslint-disable-next-line no-console
       console.error('Unexpected error:', e);
     }
     process.exit(1);

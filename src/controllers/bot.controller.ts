@@ -30,7 +30,7 @@ export default class BotController {
       res.status(201).json(bot);
 
     } catch (error) {
-      console.error('Error in summonBot:', error);
+      // console.error('Error in summonBot:', error);
       if (error instanceof Error && error.message === 'Permission denied') {
         res.status(403).json({ error: 'Permission denied' });
       } else {
@@ -108,7 +108,7 @@ export default class BotController {
       if (error instanceof Error && error.message === 'InvalidRange') {
         res.status(400).json({ error: { code: 'B001', message: 'InvalidRange' } });
       } else {
-        console.error('Error in setMiningArea:', error);
+        // console.error('Error in setMiningArea:', error);
         res.status(500).json({ error: { code: 'B000', message: 'Failed to set mining area' } });
       }
     }

@@ -12,6 +12,7 @@ export default class Scheduler {
 
   // runAllAsync で無限ループにならないよう、あまりに多く呼ばれたら自動停止
   private runCount = 0;
+
   private static readonly MAX_RUN_COUNT = 200; // 200回で十分テストを網羅
 
   constructor(intervalMs: number = 5 * 60 * 1000) { // デフォルト5分
@@ -28,7 +29,8 @@ export default class Scheduler {
     }
 
     this.intervalId = setInterval(async () => {
-      if (++this.runCount > Scheduler.MAX_RUN_COUNT) {
+      this.runCount += 1;
+      if (this.runCount > Scheduler.MAX_RUN_COUNT) {
         // これ以上はテスト環境で無限ループ判定されるので停止
         this.stop();
         return;
@@ -36,7 +38,7 @@ export default class Scheduler {
       try {
         await callback();
       } catch (error) {
-        console.error('Scheduler callback failed:', error);
+        // console.error('Scheduler callback failed:', error);
         this.stop(); // 無限ループ回避
       }
     }, this.intervalMs);

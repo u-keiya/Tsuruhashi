@@ -31,9 +31,13 @@ export default class ProgressReportService {
 
   /**
    * 定期進捗報告を開始
+   *
+   * Scheduler へは ProgressReporter.tick の **バインド済み関数** を直接渡す。
+   * これにより Scheduler 側の `await callback()` が正しく Promise を受け取り、
+   * Sinon の fake timer でも `runAllAsync()` で非同期完了を検知できる。
    */
   start(): void {
-    this.scheduler.start(() => this.progressReporter.tick());
+    this.scheduler.start(this.progressReporter.tick.bind(this.progressReporter));
   }
 
   /**
