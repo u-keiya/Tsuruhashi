@@ -68,3 +68,20 @@ export interface MiningStats {
   currentY: number;
   targetY: number;
 }
+
+/**
+ * Bot削除イベント（US-005）
+ */
+export interface BotDeletedEvent {
+  botId: string;
+  timestamp: Date;
+  deletedBy?: string; // 削除を実行したユーザー（管理者）
+}
+
+/**
+ * 削除リクエストの権限情報
+ */
+export interface DeleteBotRequest {
+  isAdmin: boolean;
+  userId?: string;
+}
