@@ -12,11 +12,19 @@ export interface PlayerActionPayload {
   face?: number;
 }
 
+export interface TextPayload {
+  type: string;
+  message: string;
+  source_name: string;
+  xuid: string;
+  platform_chat_id: string;
+}
+
 export interface ClientLike {
   // bedrock-protocol client compatible (we only need queue in unit tests)
   queue(
-    packetName: 'move_player' | 'player_action',
-    payload: MovePlayerPayload | PlayerActionPayload
+    packetName: 'move_player' | 'player_action' | 'text',
+    payload: MovePlayerPayload | PlayerActionPayload | TextPayload
   ): void;
 }
 
@@ -28,6 +36,10 @@ export interface StateDBLike {
 
 export interface ToolManagerLike {
   notifyUse(blockHardness: number): void;
+}
+
+export interface ChatNotifierLike {
+  sendMessage(message: string): void;
 }
 
 /**
@@ -60,9 +72,13 @@ export class MiningEngine {
   // === Auto Mining ===
   private toolManager?: ToolManagerLike;
 
+  private chatNotifier?: ChatNotifierLike;
+
   private miningQueue: Coord[] = [];
 
   private minedBlocks: number = 0;
+
+  private isStopped: boolean = false;
 
   constructor(params: {
     botId: string;
@@ -70,12 +86,14 @@ export class MiningEngine {
     stateDB: StateDBLike;
     initialPosition: Coord;
     toolManager?: ToolManagerLike;
+    chatNotifier?: ChatNotifierLike;
   }) {
     this.botId = params.botId;
     this.client = params.client;
     this.stateDB = params.stateDB;
     this.currentPos = { ...params.initialPosition };
     this.toolManager = params.toolManager;
+    this.chatNotifier = params.chatNotifier;
   }
 
   getState(): BotState {
@@ -133,6 +151,22 @@ export class MiningEngine {
    */
   getMinedBlocks(): number {
     return this.minedBlocks;
+  }
+
+  /**
+   * 採掘を停止する（ツール破損時など）
+   */
+  stopDig(): void {
+    this.isStopped = true;
+    this.state = BotState.Idle;
+    this.miningQueue = []; // 採掘キューをクリア
+  }
+
+  /**
+   * 停止状態を確認
+   */
+  isMiningstopped(): boolean {
+    return this.isStopped;
   }
 
   /**
@@ -203,7 +237,7 @@ export class MiningEngine {
    * - 実機では Bedrock Server からの Ack をイベントで受け取る
    */
   private async scheduleNextMining(): Promise<void> {
-      if (this.miningQueue.length === 0) return;
+      if (this.miningQueue.length === 0 || this.isStopped) return;
       const block = this.miningQueue.shift() as Coord;
   
       // 採掘開始
