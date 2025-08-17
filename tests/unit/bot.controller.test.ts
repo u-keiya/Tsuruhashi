@@ -200,12 +200,13 @@ describe('BotController', () => {
       };
 
       sinon.stub(botService, 'getBot').returns(mockBot as any);
-      sinon.stub(botService, 'deleteBot').resolves();
+      const deleteStub = sinon.stub(botService, 'deleteBot').resolves();
 
       await botController.deleteBot(req as Request, res as Response);
 
       expect(statusStub.calledWith(204)).to.be.true;
       expect(sendStub.calledOnce).to.be.true;
+      expect(deleteStub.calledWith(botId, 'admin-user')).to.be.true;
     });
 
     it('should return 403 when user is not admin', async () => {
@@ -220,12 +221,16 @@ describe('BotController', () => {
         }
       };
 
+      const getBotSpy = sinon.spy(botService, 'getBot');
+      const deleteSpy = sinon.spy(botService, 'deleteBot');
       await botController.deleteBot(req as Request, res as Response);
 
       expect(statusStub.calledWith(403)).to.be.true;
       expect(jsonStub.calledWith({
         error: 'Forbidden – requires Admin role'
       })).to.be.true;
+      expect(getBotSpy.notCalled).to.be.true;
+      expect(deleteSpy.notCalled).to.be.true;
     });
 
     it('should return 404 when bot is not found', async () => {

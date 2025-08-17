@@ -10,6 +10,8 @@ describe('DeletionManager', () => {
   let disconnectStub: sinon.SinonStub;
   let getSummaryStub: sinon.SinonStub;
 
+  let gracefulStopStub: sinon.SinonStub;
+
   beforeEach(() => {
     deletionManager = new DeletionManager();
     mockBot = new Bot();
@@ -20,6 +22,13 @@ describe('DeletionManager', () => {
       id: 'test-bot-id',
       state: BotState.Idle
     });
+    // 1秒待ちを回避しつつ disconnect 呼び出しは維持
+    gracefulStopStub = sinon
+      .stub(DeletionManager as any, 'gracefulStop')
+      .callsFake(async (...args: unknown[]) => {
+        const bot = args[0] as Bot;
+        bot.disconnect();
+      });
   });
 
   afterEach(() => {
