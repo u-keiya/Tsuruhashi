@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import BotService from '../../src/services/bot.service';
+import BotService, { BOT_COUNT_RANGE_ERROR } from '../../src/services/bot.service';
 import Bot from '../../src/models/bot.model';
 import { BotState } from '../../src/types/bot.types';
 
@@ -26,7 +26,7 @@ describe('BotService', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.be.instanceOf(Error);
-        expect((error as Error).message).to.equal('Bot count must be between 1 and 10');
+        expect((error as Error).message).to.equal(BOT_COUNT_RANGE_ERROR);
       }
     });
 
@@ -38,7 +38,7 @@ describe('BotService', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.be.instanceOf(Error);
-        expect((error as Error).message).to.equal('Bot count must be between 1 and 10');
+        expect((error as Error).message).to.equal(BOT_COUNT_RANGE_ERROR);
       }
     });
 

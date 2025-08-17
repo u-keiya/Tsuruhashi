@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import BotService from '../services/bot.service';
+import BotService, { BOT_COUNT_RANGE_ERROR } from '../services/bot.service';
 import { SummonBotRequest, MiningArea, DeleteBotRequest } from '../types/bot.types';
 
 /**
@@ -29,7 +29,7 @@ export default class BotController {
       }
 
       if (!Number.isFinite(count) || !Number.isInteger(count) || count < 1 || count > 10) {
-        res.status(400).json({ error: 'count must be between 1 and 10' });
+        res.status(400).json({ error: BOT_COUNT_RANGE_ERROR });
         return;
       }
 
@@ -40,8 +40,8 @@ export default class BotController {
       // console.error('Error in summonBot:', error);
       if (error instanceof Error && error.message === 'Permission denied') {
         res.status(403).json({ error: 'Permission denied' });
-      } else if (error instanceof Error && error.message === 'Bot count must be between 1 and 10') {
-        res.status(400).json({ error: 'Bot count must be between 1 and 10' });
+      } else if (error instanceof Error && error.message === BOT_COUNT_RANGE_ERROR) {
+        res.status(400).json({ error: BOT_COUNT_RANGE_ERROR });
       } else {
         res.status(500).json({ error: 'Failed to summon bot' });
       }

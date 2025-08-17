@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import { Request, Response } from 'express';
 import BotController from '../../src/controllers/bot.controller';
-import BotService from '../../src/services/bot.service';
+import BotService, { BOT_COUNT_RANGE_ERROR } from '../../src/services/bot.service';
 import { BotState, BotSummary } from '../../src/types/bot.types';
 
 describe('BotController', () => {
@@ -105,7 +105,7 @@ describe('BotController', () => {
 
       expect(statusStub.calledWith(400)).to.be.true;
       expect(jsonStub.calledWith({
-        error: 'count must be between 1 and 10'
+        error: BOT_COUNT_RANGE_ERROR
       })).to.be.true;
       expect(summonSpy.notCalled).to.be.true;
     });
@@ -120,7 +120,7 @@ describe('BotController', () => {
 
       expect(statusStub.calledWith(400)).to.be.true;
       expect(jsonStub.calledWith({
-        error: 'count must be between 1 and 10'
+        error: BOT_COUNT_RANGE_ERROR
       })).to.be.true;
       expect(summonSpy.notCalled).to.be.true;
     });

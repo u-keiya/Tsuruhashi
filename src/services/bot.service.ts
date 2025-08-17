@@ -1,6 +1,10 @@
 import Bot from '../models/bot.model';
 import { BotSummary, MiningArea } from '../types/bot.types';
 import DeletionManager from '../engine/deletionManager';
+/**
+ * Bot数バリデーション共通エラーメッセージ
+ */
+export const BOT_COUNT_RANGE_ERROR = 'Bot count must be between 1 and 10';
 
 /**
  * Botのサービスクラス
@@ -25,7 +29,7 @@ export default class BotService {
    */
   async summonBot(playerId: string, count: number = 1): Promise<BotSummary[]> {
     if (!Number.isFinite(count) || !Number.isInteger(count) || count < 1 || count > 10) {
-      throw new Error('Bot count must be between 1 and 10');
+      throw new Error(BOT_COUNT_RANGE_ERROR);
     }
 
     const bots: Bot[] = Array.from({ length: count }, () => new Bot());
