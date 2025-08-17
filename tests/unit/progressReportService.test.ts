@@ -55,11 +55,9 @@ describe('ProgressReportService', () => {
       expect(mockChatNotifier.sendMessage.called).to.be.false;
       
       // 1秒経過で実行される
-      clock.tick(1000);
-      
-      // Promise.resolveを使って非同期処理を同期的に処理
-      // runAllAsync() が完了するまでマイクロタスクの実行を待機
-      await Promise.resolve();
+      // tickAsync を使うことで、タイマーを進めると同時に
+      // 非同期コールバック (progressReporter.tick) の完了を待機できる
+      await clock.tickAsync(1000);
       
       expect(mockStateDB.getMiningStats.calledWith('test-bot-id')).to.be.true;
       expect(mockChatNotifier.sendMessage.calledOnce).to.be.true;
