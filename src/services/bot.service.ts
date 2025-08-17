@@ -19,18 +19,13 @@ export default class BotService {
    * @throws Error 接続に失敗した場合
    */
   async summonBot(playerId: string): Promise<BotSummary> {
-    try {
-      const bot = new Bot();
-      await bot.connect(playerId);
+    const bot = new Bot();
+    await bot.connect(playerId);
       
-      const summary = bot.getSummary();
-      this.bots.set(summary.id, bot);
+    const summary = bot.getSummary();
+    this.bots.set(summary.id, bot);
       
-      return summary;
-    } catch (error) {
-      console.error('Failed to summon bot:', error);
-      throw error;
-    }
+    return summary;
   }
 
   /**

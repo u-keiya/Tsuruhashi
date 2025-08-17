@@ -33,6 +33,8 @@ export interface StateDBLike {
   upsert(botId: string, state: BotState, pos: Coord): Promise<void> | void;
   // 自動採掘での累積カウント（任意実装）
   incrementMined?(botId: string, n: number): Promise<void> | void;
+  // 進捗報告用の統計情報取得（任意実装）
+  getMiningStats?(botId: string): Promise<import('../types/bot.types').MiningStats> | import('../types/bot.types').MiningStats;
 }
 
 export interface ToolManagerLike {

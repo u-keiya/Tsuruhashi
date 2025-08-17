@@ -55,7 +55,7 @@ export default class Bot {
       });
 
     } catch (error) {
-      console.error('Failed to connect:', error);
+      // console.error('Failed to connect:', error);
       throw new Error('Failed to connect to Minecraft server');
     }
   }
