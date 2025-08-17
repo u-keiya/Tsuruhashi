@@ -1,12 +1,13 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { ToolManager, Tool, MiningEngineLike } from '../../src/engine/toolManager';
+import { ToolManager, Tool, Item, MiningEngineLike, InventoryLike } from '../../src/engine/toolManager';
 import { ChatNotifierLike } from '../../src/engine/ports';
 
 describe('ToolManager', () => {
   let toolManager: ToolManager;
   let mockChatNotifier: ChatNotifierLike & { sendMessage: sinon.SinonSpy };
-  let mockMiningEngine: MiningEngineLike & { stopDig: sinon.SinonSpy };
+  let mockMiningEngine: MiningEngineLike & { stopDig: sinon.SinonSpy; equip: sinon.SinonSpy };
+  let mockInventory: InventoryLike & { nextUsableTool: sinon.SinonStub };
 
   beforeEach(() => {
     mockChatNotifier = {
@@ -14,12 +15,18 @@ describe('ToolManager', () => {
     } as unknown as ChatNotifierLike & { sendMessage: sinon.SinonSpy };
 
     mockMiningEngine = {
-      stopDig: sinon.spy()
-    } as unknown as MiningEngineLike & { stopDig: sinon.SinonSpy };
+      stopDig: sinon.spy(),
+      equip: sinon.spy()
+    } as unknown as MiningEngineLike & { stopDig: sinon.SinonSpy; equip: sinon.SinonSpy };
+
+    mockInventory = {
+      nextUsableTool: sinon.stub()
+    } as unknown as InventoryLike & { nextUsableTool: sinon.SinonStub };
 
     toolManager = new ToolManager({
       chatNotifier: mockChatNotifier,
-      miningEngine: mockMiningEngine
+      miningEngine: mockMiningEngine,
+      inventory: mockInventory
     });
   });
 
@@ -62,7 +69,7 @@ describe('ToolManager', () => {
       expect(currentTool?.durability).to.equal(0);
     });
 
-    it('should call stopDig and send chat message when durability reaches 0', () => {
+    it('should call stopDig and send chat message when durability reaches 0 and no spare tool', () => {
       // Arrange
       const tool: Tool = {
         id: 'pickaxe-1',
@@ -70,6 +77,7 @@ describe('ToolManager', () => {
         maxDurability: 10
       };
       toolManager.setTool(tool);
+      mockInventory.nextUsableTool.returns(null); // 予備ツールなし
 
       // Act
       toolManager.notifyUse(1);
@@ -77,6 +85,34 @@ describe('ToolManager', () => {
       // Assert
       expect(mockMiningEngine.stopDig.calledOnce).to.be.true;
       expect(mockChatNotifier.sendMessage.calledOnceWith('ツール切れで停止')).to.be.true;
+    });
+
+    it('should auto swap to spare tool when durability reaches 0 and spare tool exists', () => {
+      // Arrange
+      const tool: Tool = {
+        id: 'pickaxe-1',
+        durability: 1,
+        maxDurability: 10
+      };
+      const spareTool: Tool = {
+        id: 'pickaxe-2',
+        durability: 8,
+        maxDurability: 10
+      };
+      toolManager.setTool(tool);
+      mockInventory.nextUsableTool.returns(spareTool);
+
+      // Act
+      toolManager.notifyUse(1);
+
+      // Assert
+      expect(mockMiningEngine.equip.calledOnceWith(spareTool)).to.be.true;
+      expect(mockChatNotifier.sendMessage.calledOnceWith('ツール交換完了')).to.be.true;
+      expect(mockMiningEngine.stopDig.called).to.be.false;
+      
+      // 現在のツールが交換されていることを確認
+      const currentTool = toolManager.getCurrentTool();
+      expect(currentTool).to.deep.equal(spareTool);
     });
 
     it('should handle case when durability goes from 1 to 0', () => {
@@ -187,6 +223,95 @@ describe('ToolManager', () => {
     });
   });
 
+  describe('pickup', () => {
+    it('should auto equip tool when no current tool and item is a tool', () => {
+      // Arrange
+      const item: Item = {
+        id: 'pickaxe-1',
+        name: 'Diamond Pickaxe',
+        durability: 8,
+        maxDurability: 10
+      };
+
+      // Act
+      toolManager.pickup(item);
+
+      // Assert
+      const expectedTool: Tool = {
+        id: 'pickaxe-1',
+        durability: 8,
+        maxDurability: 10
+      };
+      expect(mockMiningEngine.equip.calledOnceWith(expectedTool)).to.be.true;
+      expect(mockChatNotifier.sendMessage.calledOnceWith('ツール Diamond Pickaxe を装備しました')).to.be.true;
+      
+      const currentTool = toolManager.getCurrentTool();
+      expect(currentTool).to.deep.equal(expectedTool);
+    });
+
+    it('should not equip when current tool already exists', () => {
+      // Arrange
+      const existingTool: Tool = {
+        id: 'pickaxe-existing',
+        durability: 5,
+        maxDurability: 10
+      };
+      toolManager.setTool(existingTool);
+
+      const item: Item = {
+        id: 'pickaxe-new',
+        name: 'Iron Pickaxe',
+        durability: 7,
+        maxDurability: 10
+      };
+
+      // Act
+      toolManager.pickup(item);
+
+      // Assert
+      expect(mockMiningEngine.equip.called).to.be.false;
+      expect(mockChatNotifier.sendMessage.called).to.be.false;
+      
+      const currentTool = toolManager.getCurrentTool();
+      expect(currentTool).to.deep.equal(existingTool);
+    });
+
+    it('should not equip when item is not a tool', () => {
+      // Arrange
+      const item: Item = {
+        id: 'cobblestone',
+        name: 'Cobblestone'
+        // durability and maxDurability are undefined
+      };
+
+      // Act
+      toolManager.pickup(item);
+
+      // Assert
+      expect(mockMiningEngine.equip.called).to.be.false;
+      expect(mockChatNotifier.sendMessage.called).to.be.false;
+      expect(toolManager.getCurrentTool()).to.be.null;
+    });
+
+    it('should not equip when item has zero durability', () => {
+      // Arrange
+      const item: Item = {
+        id: 'broken-pickaxe',
+        name: 'Broken Pickaxe',
+        durability: 0,
+        maxDurability: 10
+      };
+
+      // Act
+      toolManager.pickup(item);
+
+      // Assert
+      expect(mockMiningEngine.equip.called).to.be.false;
+      expect(mockChatNotifier.sendMessage.called).to.be.false;
+      expect(toolManager.getCurrentTool()).to.be.null;
+    });
+  });
+
   describe('constructor with initial tool', () => {
     it('should set initial tool when provided', () => {
       // Arrange
@@ -200,6 +325,7 @@ describe('ToolManager', () => {
       const toolManagerWithInitialTool = new ToolManager({
         chatNotifier: mockChatNotifier,
         miningEngine: mockMiningEngine,
+        inventory: mockInventory,
         initialTool: initialTool
       });
 
