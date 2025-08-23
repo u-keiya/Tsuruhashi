@@ -1,6 +1,7 @@
 import Bot from '../models/bot.model';
-import { BotSummary, MiningArea } from '../types/bot.types';
+import { BotSummary, MiningArea, BotState, Coord } from '../types/bot.types';
 import DeletionManager from '../engine/deletionManager';
+import { MiningEngine } from '../engine/miningEngine';
 /**
  * Bot数バリデーション共通エラーメッセージ
  */
@@ -108,5 +109,58 @@ export default class BotService {
     }
     // Bot.setMiningArea 内で InvalidRange を検証
     bot.setMiningArea(area);
+  }
+
+  /**
+   * 採掘を開始する
+   * US-001-4: 自動採掘開始
+   * @param botId BotのID
+   * @throws Error 'BotNotFound' | 'BotAlreadyMining' | 'RangeNotSet'
+   */
+  async startMining(botId: string): Promise<void> {
+    const bot = this.bots.get(botId);
+    if (!bot) {
+      throw new Error('BotNotFound');
+    }
+
+    // 前提チェック: Bot state が Idle であること
+    if (bot.getState() !== BotState.Idle) {
+      throw new Error('BotAlreadyMining');
+    }
+
+    // 前提チェック: mining range が設定済みであること
+    const miningArea = bot.getMiningArea();
+    if (!miningArea) {
+      throw new Error('RangeNotSet');
+    }
+
+    // MiningEngine を毎回新規作成して、現在位置に同期
+    const client = bot.getClient();
+    const position = bot.getPosition();
+    if (!client || !position) {
+      throw new Error('BotNotConnected');
+    }
+    const miningEngine = new MiningEngine({
+      botId,
+      client,
+      stateDB: {
+        // メモリ上の state 管理
+        upsert: (id: string, state: BotState, _pos: Coord) => {
+          bot.setState(state);
+        }
+      },
+      initialPosition: position
+    });
+    bot.setMiningEngine(miningEngine);
+
+    // MiningEngineに採掘エリアを設定
+    miningEngine.setMiningArea(miningArea);
+
+    // 採掘開始位置（エリアの開始地点）へのsetTargetを実行
+    // これによりstate が Moving に遷移する
+    miningEngine.setTarget(miningArea.start);
+
+    // MiningEngine の状態に同期（path が無ければ Idle のまま）
+    bot.setState(miningEngine.getState());
   }
 }

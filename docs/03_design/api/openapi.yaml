@@ -42,6 +42,20 @@ components:
           type: object
           additionalProperties: true
       required: [name]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "B006"
+            message:
+              type: string
+              example: "Bot not connected"
+          required: [code, message]
+      required: [error]
 paths:
   /bots/summon:
     post:
@@ -89,7 +103,20 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '202': { description: Accepted }
+        '202':
+          description: Accepted
+        '503':
+          description: Bot not connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                BotNotConnected:
+                  value:
+                    error:
+                      code: B006
+                      message: Bot not connected
   /bots/{botId}/stop:
     post:
       summary: Stop mining
@@ -139,7 +166,6 @@ paths:
             schema: { $ref: '#/components/schemas/PluginSpec' }
       responses:
         '202': { description: Accepted }
-
   /bots/{botId}:
     delete:
       summary: Delete bot permanently  #US-005
