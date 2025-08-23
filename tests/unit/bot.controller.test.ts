@@ -405,4 +405,147 @@ describe('BotController', () => {
       })).to.be.true;
     });
   });
+
+  describe('startMining', () => {
+    let sendStub: sinon.SinonStub;
+
+    beforeEach(() => {
+      sendStub = sinon.stub();
+      (res as any).send = sendStub;
+      sendStub.returns(res);
+      statusStub.returns(res);
+    });
+
+    it('should return 202 when mining starts successfully', async () => {
+      const botId = 'bot-123';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      const startMiningStub = sinon.stub(botService, 'startMining').resolves();
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(startMiningStub.calledWith(botId)).to.be.true;
+      expect(statusStub.calledWith(202)).to.be.true;
+      expect(sendStub.calledOnce).to.be.true;
+    });
+
+    it('should return 403 when user is not admin', async () => {
+      const botId = 'bot-123';
+
+      // 非管理者のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'false',
+          'x-user-id': 'regular-user'
+        }
+      };
+
+      const startMiningSpy = sinon.spy(botService, 'startMining');
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(statusStub.calledWith(403)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: { code: 'B005', message: 'Permission denied' }
+      })).to.be.true;
+      expect(startMiningSpy.notCalled).to.be.true;
+    });
+
+    it('should return 404 when bot is not found', async () => {
+      const botId = 'non-existent-bot';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'startMining').rejects(new Error('BotNotFound'));
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(statusStub.calledWith(404)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: { code: 'B002', message: 'Bot not found' }
+      })).to.be.true;
+    });
+
+    it('should return 409 when bot is already mining', async () => {
+      const botId = 'bot-123';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'startMining').rejects(new Error('BotAlreadyMining'));
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(statusStub.calledWith(409)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: { code: 'B003', message: 'Bot already mining' }
+      })).to.be.true;
+    });
+
+    it('should return 400 when range is not set', async () => {
+      const botId = 'bot-123';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'startMining').rejects(new Error('RangeNotSet'));
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(statusStub.calledWith(400)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: { code: 'B004', message: 'Range not set' }
+      })).to.be.true;
+    });
+
+    it('should return 500 for other errors', async () => {
+      const botId = 'bot-123';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'startMining').rejects(new Error('Unexpected error'));
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(statusStub.calledWith(500)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: { code: 'B000', message: 'Failed to start mining' }
+      })).to.be.true;
+    });
+  });
 });

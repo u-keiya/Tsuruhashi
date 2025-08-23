@@ -126,4 +126,106 @@ describe('BotService', () => {
       expect(result).to.be.an('array').that.is.empty;
     });
   });
+
+  describe('startMining', () => {
+    let mockBot: sinon.SinonStubbedInstance<any>;
+    let botId: string;
+
+    beforeEach(() => {
+      botId = 'test-bot-id';
+      mockBot = {
+        getState: sinon.stub(),
+        getMiningArea: sinon.stub(),
+        getMiningEngine: sinon.stub(),
+        getClient: sinon.stub(),
+        getPosition: sinon.stub(),
+        setMiningEngine: sinon.stub(),
+        setState: sinon.stub(),
+        getSummary: sinon.stub()
+      };
+      
+      (botService as any).bots.set(botId, mockBot);
+    });
+
+    it('should throw BotNotFound when bot does not exist', async () => {
+      try {
+        await botService.startMining('non-existent-bot');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).to.be.instanceOf(Error);
+        expect((error as Error).message).to.equal('BotNotFound');
+      }
+    });
+
+    it('should throw BotAlreadyMining when bot is not Idle', async () => {
+      mockBot.getState.returns(BotState.Mining);
+      
+      try {
+        await botService.startMining(botId);
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).to.be.instanceOf(Error);
+        expect((error as Error).message).to.equal('BotAlreadyMining');
+      }
+    });
+
+    it('should throw RangeNotSet when mining area is not set', async () => {
+      mockBot.getState.returns(BotState.Idle);
+      mockBot.getMiningArea.returns(null);
+      
+      try {
+        await botService.startMining(botId);
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).to.be.instanceOf(Error);
+        expect((error as Error).message).to.equal('RangeNotSet');
+      }
+    });
+
+    it('should successfully start mining when conditions are met', async () => {
+      const miningArea = {
+        start: { x: 0, y: 60, z: 0 },
+        end: { x: 10, y: 70, z: 10 }
+      };
+      const position = { x: 5, y: 64, z: 5 };
+      const mockClient = {};
+      const mockMiningEngine = {
+        setMiningArea: sinon.stub(),
+        setTarget: sinon.stub()
+      };
+
+      mockBot.getState.returns(BotState.Idle);
+      mockBot.getMiningArea.returns(miningArea);
+      mockBot.getMiningEngine.returns(null);
+      mockBot.getClient.returns(mockClient);
+      mockBot.getPosition.returns(position);
+      mockBot.getSummary.returns({ id: botId, state: BotState.Idle });
+
+      await botService.startMining(botId);
+
+      expect(mockBot.setState.calledWith(BotState.Moving)).to.be.true;
+      expect(mockBot.setMiningEngine.calledOnce).to.be.true;
+    });
+
+    it('should reuse existing MiningEngine when available', async () => {
+      const miningArea = {
+        start: { x: 0, y: 60, z: 0 },
+        end: { x: 10, y: 70, z: 10 }
+      };
+      const mockMiningEngine = {
+        setMiningArea: sinon.stub(),
+        setTarget: sinon.stub()
+      };
+
+      mockBot.getState.returns(BotState.Idle);
+      mockBot.getMiningArea.returns(miningArea);
+      mockBot.getMiningEngine.returns(mockMiningEngine);
+
+      await botService.startMining(botId);
+
+      expect(mockMiningEngine.setMiningArea.calledWith(miningArea)).to.be.true;
+      expect(mockMiningEngine.setTarget.calledWith(miningArea.start)).to.be.true;
+      expect(mockBot.setState.calledWith(BotState.Moving)).to.be.true;
+    });
+  });
 });

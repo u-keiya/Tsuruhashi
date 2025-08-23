@@ -1,6 +1,7 @@
 import { createClient, Client } from 'bedrock-protocol';
 import { v4 as uuidv4 } from 'uuid';
 import { BotState, BotSummary, Coord, MiningArea } from '../types/bot.types';
+import { MiningEngine } from '../engine/miningEngine';
 
 /**
  * Minecraftのボットを表すクラス
@@ -19,6 +20,8 @@ export default class Bot {
 
   private ownerPlayerId: string | null;
 
+  private miningEngine: MiningEngine | null;
+
   constructor() {
     this.id = uuidv4();
     this.state = BotState.Idle;
@@ -26,6 +29,7 @@ export default class Bot {
     this.position = null;
     this.miningArea = null;
     this.ownerPlayerId = null;
+    this.miningEngine = null;
   }
 
   /**
@@ -118,6 +122,41 @@ export default class Bot {
           end:   { ...this.miningArea.end }
         }
       : null;
+  }
+
+  /**
+   * 現在のstateを取得
+   */
+  getState(): BotState {
+    return this.state;
+  }
+
+  /**
+   * stateを設定（内部使用）
+   */
+  setState(state: BotState): void {
+    this.state = state;
+  }
+
+  /**
+   * MiningEngineを設定
+   */
+  setMiningEngine(engine: MiningEngine): void {
+    this.miningEngine = engine;
+  }
+
+  /**
+   * MiningEngineを取得
+   */
+  getMiningEngine(): MiningEngine | null {
+    return this.miningEngine;
+  }
+
+  /**
+   * Clientを取得（MiningEngine作成用）
+   */
+  getClient(): Client | null {
+    return this.client;
   }
 
   private static isValidCoord(c: Coord | undefined | null): c is Coord {

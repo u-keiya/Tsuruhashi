@@ -160,4 +160,45 @@ export default class BotController {
       }
     }
   }
+
+  /**
+   * 採掘を開始する
+   * POST /bots/:id/start
+   * US-001-4: 自動採掘開始
+   */
+  async startMining(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      // 管理者権限チェック
+      const deleteRequest = BotController.extractDeleteRequest(req);
+      if (!deleteRequest.isAdmin) {
+        res.status(403).json({ error: { code: 'B005', message: 'Permission denied' } });
+        return;
+      }
+
+      await this.botService.startMining(id);
+      res.status(202).send();
+
+    } catch (error) {
+      if (error instanceof Error) {
+        switch (error.message) {
+          case 'BotNotFound':
+            res.status(404).json({ error: { code: 'B002', message: 'Bot not found' } });
+            break;
+          case 'BotAlreadyMining':
+            res.status(409).json({ error: { code: 'B003', message: 'Bot already mining' } });
+            break;
+          case 'RangeNotSet':
+            res.status(400).json({ error: { code: 'B004', message: 'Range not set' } });
+            break;
+          default:
+            // console.error('Error in startMining:', error);
+            res.status(500).json({ error: { code: 'B000', message: 'Failed to start mining' } });
+        }
+      } else {
+        res.status(500).json({ error: { code: 'B000', message: 'Failed to start mining' } });
+      }
+    }
+  }
 }

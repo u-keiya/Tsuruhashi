@@ -1,6 +1,7 @@
 import Bot from '../models/bot.model';
-import { BotSummary, MiningArea } from '../types/bot.types';
+import { BotSummary, MiningArea, BotState } from '../types/bot.types';
 import DeletionManager from '../engine/deletionManager';
+import { MiningEngine } from '../engine/miningEngine';
 /**
  * Bot数バリデーション共通エラーメッセージ
  */
@@ -108,5 +109,65 @@ export default class BotService {
     }
     // Bot.setMiningArea 内で InvalidRange を検証
     bot.setMiningArea(area);
+  }
+
+  /**
+   * 採掘を開始する
+   * US-001-4: 自動採掘開始
+   * @param botId BotのID
+   * @throws Error 'BotNotFound' | 'BotAlreadyMining' | 'RangeNotSet'
+   */
+  async startMining(botId: string): Promise<void> {
+    const bot = this.bots.get(botId);
+    if (!bot) {
+      throw new Error('BotNotFound');
+    }
+
+    // 前提チェック: Bot state が Idle であること
+    if (bot.getState() !== BotState.Idle) {
+      throw new Error('BotAlreadyMining');
+    }
+
+    // 前提チェック: mining range が設定済みであること
+    const miningArea = bot.getMiningArea();
+    if (!miningArea) {
+      throw new Error('RangeNotSet');
+    }
+
+    // MiningEngineを作成または取得
+    let miningEngine = bot.getMiningEngine();
+    if (!miningEngine) {
+      const client = bot.getClient();
+      const position = bot.getPosition();
+      
+      if (!client || !position) {
+        throw new Error('BotNotConnected');
+      }
+
+      // MiningEngine を作成（StateDBは実装なし、メモリ上で管理）
+      miningEngine = new MiningEngine({
+        botId: bot.getSummary().id,
+        client,
+        stateDB: {
+          // メモリ上のstate管理なので、実際のDB書き込みは行わない
+          upsert: (id: string, state: BotState) => {
+            bot.setState(state);
+          }
+        },
+        initialPosition: position
+      });
+      
+      bot.setMiningEngine(miningEngine);
+    }
+
+    // MiningEngineに採掘エリアを設定
+    miningEngine.setMiningArea(miningArea);
+    
+    // 採掘開始位置（エリアの開始地点）へのsetTargetを実行
+    // これによりstate が Moving に遷移する
+    miningEngine.setTarget(miningArea.start);
+
+    // stateを更新（メモリ上）
+    bot.setState(BotState.Moving);
   }
 }
