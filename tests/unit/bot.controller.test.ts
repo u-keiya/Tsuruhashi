@@ -52,7 +52,7 @@ describe('BotController', () => {
 
       expect(summonStub.calledOnceWithExactly(playerId, 1)).to.be.true;
       expect(statusStub.calledWith(201)).to.be.true;
-      expect(jsonStub.calledWith([{
+      expect(jsonStub.calledOnceWithExactly([{
         id: botId,
         state: BotState.Idle
       }])).to.be.true;

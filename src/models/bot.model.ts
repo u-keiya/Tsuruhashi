@@ -76,6 +76,8 @@ export default class Bot {
       this.client.close();
       this.client = null;
     }
+    // エンジン参照も明示的に破棄（再接続時の取り違え防止）
+    this.miningEngine = null;
   }
 
   /**
@@ -134,6 +136,10 @@ export default class Bot {
   /**
    * stateを設定（内部使用）
    */
+  /**
+   * @internal
+   * 状態遷移の一貫性を保つため、Service/Engine のみが通る経路で利用すること
+   */
   setState(state: BotState): void {
     this.state = state;
   }
@@ -142,6 +148,8 @@ export default class Bot {
    * MiningEngineを設定
    */
   setMiningEngine(engine: MiningEngine): void {
+    // 旧エンジンの停止/破棄が必要な場合はここで対応
+    // if (this.miningEngine) { this.miningEngine.stop?.(); }
     this.miningEngine = engine;
   }
 
@@ -149,6 +157,7 @@ export default class Bot {
    * MiningEngineを取得
    */
   getMiningEngine(): MiningEngine | null {
+    // 再利用する場合は currentPos, queue の同期に注意
     return this.miningEngine;
   }
 
@@ -156,6 +165,7 @@ export default class Bot {
    * Clientを取得（MiningEngine作成用）
    */
   getClient(): Client | null {
+    // 返す型は最小限のインターフェイスに寄せると安全
     return this.client;
   }
 

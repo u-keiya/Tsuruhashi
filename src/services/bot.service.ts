@@ -1,5 +1,5 @@
 import Bot from '../models/bot.model';
-import { BotSummary, MiningArea, BotState } from '../types/bot.types';
+import { BotSummary, MiningArea, BotState, Coord } from '../types/bot.types';
 import DeletionManager from '../engine/deletionManager';
 import { MiningEngine } from '../engine/miningEngine';
 /**
@@ -134,40 +134,33 @@ export default class BotService {
       throw new Error('RangeNotSet');
     }
 
-    // MiningEngineを作成または取得
-    let miningEngine = bot.getMiningEngine();
-    if (!miningEngine) {
-      const client = bot.getClient();
-      const position = bot.getPosition();
-      
-      if (!client || !position) {
-        throw new Error('BotNotConnected');
-      }
-
-      // MiningEngine を作成（StateDBは実装なし、メモリ上で管理）
-      miningEngine = new MiningEngine({
-        botId: bot.getSummary().id,
-        client,
-        stateDB: {
-          // メモリ上のstate管理なので、実際のDB書き込みは行わない
-          upsert: (id: string, state: BotState) => {
-            bot.setState(state);
-          }
-        },
-        initialPosition: position
-      });
-      
-      bot.setMiningEngine(miningEngine);
+    // MiningEngine を毎回新規作成して、現在位置に同期
+    const client = bot.getClient();
+    const position = bot.getPosition();
+    if (!client || !position) {
+      throw new Error('BotNotConnected');
     }
+    const miningEngine = new MiningEngine({
+      botId,
+      client,
+      stateDB: {
+        // メモリ上の state 管理
+        upsert: (id: string, state: BotState, _pos: Coord) => {
+          bot.setState(state);
+        }
+      },
+      initialPosition: position
+    });
+    bot.setMiningEngine(miningEngine);
 
     // MiningEngineに採掘エリアを設定
     miningEngine.setMiningArea(miningArea);
-    
+
     // 採掘開始位置（エリアの開始地点）へのsetTargetを実行
     // これによりstate が Moving に遷移する
     miningEngine.setTarget(miningArea.start);
 
-    // stateを更新（メモリ上）
-    bot.setState(BotState.Moving);
+    // MiningEngine の状態に同期（path が無ければ Idle のまま）
+    bot.setState(miningEngine.getState());
   }
 }

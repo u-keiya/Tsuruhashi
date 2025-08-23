@@ -26,12 +26,14 @@
 ### Open Questions
 - 今後、サーバーがオンライン認証を必須にする運用（`online-mode=true`）に戻す場合、ボットにMSA認証（device-code 等）を組み込む必要がありますか？（該当担当: Dev / Ops）
 
----issue
+#### Issue
+```json
 {
-"title": "docs: bedrock-protocol - clarify offline/online-mode interoperability and add sample client config",
-"body": "症状: bot クライアントが `offline: true` で接続しようとした際、サーバーが `online-mode=true` の場合に接続が拒否される事象を確認しました。\n対応案: `docs/04_dev/bedrock-protocol/API.md` に「offline と server.properties の online-mode の関係」説明と、接続成功/失敗のサンプル（client options と server.properties の組み合わせ）を追記してください。\n影響箇所: `src/models/bot.model.ts` の接続サンプル参照。\nラベル: [\"docs\"], 優先度: normal, 担当: DD",
-"labels": ["docs"]
+  "title": "docs: bedrock-protocol - clarify offline/online-mode interoperability and add sample client config",
+  "body": "症状: bot クライアントが `offline: true` で接続しようとした際、サーバーが `online-mode=true` の場合に接続が拒否される事象を確認しました。\n対応案: `docs/04_dev/bedrock-protocol/API.md` に「offline と server.properties の online-mode の関係」説明と、接続成功/失敗のサンプル（client options と server.properties の組み合わせ）を追記してください。\n影響箇所: `src/models/bot.model.ts` の接続サンプル参照。\nラベル: [\"docs\"], 優先度: normal, 担当: DD",
+  "labels": ["docs"]
 }
----
+```
+
 
 Session saved by DS on 2025-08-23 14:47 JST.

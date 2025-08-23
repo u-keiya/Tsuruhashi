@@ -171,8 +171,8 @@ export default class BotController {
       const { id } = req.params;
       
       // 管理者権限チェック
-      const deleteRequest = BotController.extractDeleteRequest(req);
-      if (!deleteRequest.isAdmin) {
+      const authContext = BotController.extractAuthContext(req);
+      if (!authContext.isAdmin) {
         res.status(403).json({ error: { code: 'B005', message: 'Permission denied' } });
         return;
       }
@@ -192,6 +192,9 @@ export default class BotController {
           case 'RangeNotSet':
             res.status(400).json({ error: { code: 'B004', message: 'Range not set' } });
             break;
+          case 'BotNotConnected':
+            res.status(503).json({ error: { code: 'B006', message: 'Bot not connected' } });
+            break;
           default:
             // console.error('Error in startMining:', error);
             res.status(500).json({ error: { code: 'B000', message: 'Failed to start mining' } });
@@ -201,4 +204,15 @@ export default class BotController {
       }
     }
   }
+
+  /**
+   * 認可コンテキスト抽出（管理者チェック）
+   */
+  private static extractAuthContext(req: Request): DeleteBotRequest {
+    return {
+      isAdmin: req.headers['x-admin-role'] === 'true',
+      userId: typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : undefined
+    };
+  }
+
 }

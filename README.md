@@ -62,6 +62,18 @@ node dist/cli/setarea.js --help
 - `--start-x, --start-y, --start-z`: 開始座標（必須）
 - `--end-x, --end-y, --end-z`: 終了座標（必須）
 
+### 採掘開始 (`startbot`)
+
+```bash
+# 基本的な使用方法（ビルド後）
+node dist/cli/startbot.js <bot-id>
+
+# ts-node を使う場合（開発時）
+npx ts-node src/cli/startbot.ts <bot-id>
+```
+
+成功時は "Mining started" を出力します。エラー時は原因（Bot not found / Bot already mining / Range not set など）を表示します。
+
 ## 🌐 HTTP API
 
 ### ボット管理
@@ -94,8 +106,11 @@ node dist/cli/setarea.js --help
 ### curlを使用したAPI呼び出し
 
 ```bash
-# マイニング開始
-curl -X POST http://localhost:8080/bots/{bot-id}/start
+# マイニング開始（管理者権限が必要）
+curl -X POST \
+  -H "x-admin-role: true" \
+  -H "x-user-id: admin-cli" \
+  http://localhost:8080/bots/{bot-id}/start
 
 # マイニング停止
 curl -X POST http://localhost:8080/bots/{bot-id}/stop
@@ -103,8 +118,11 @@ curl -X POST http://localhost:8080/bots/{bot-id}/stop
 # 進捗確認
 curl -X GET http://localhost:8080/bots/{bot-id}/progress
 
-# ボット削除
-curl -X DELETE http://localhost:8080/bots/{bot-id}
+# ボット削除（管理者権限が必要）
+curl -X DELETE \
+  -H "x-admin-role: true" \
+  -H "x-user-id: admin-cli" \
+  http://localhost:8080/bots/{bot-id}
 ```
 
 ### 完全なワークフロー例
@@ -174,6 +192,7 @@ npm run lint:fix
 | 400 | リクエスト不正 |
 | 403 | 権限不足 |
 | 404 | リソースが見つからない |
+| 409 | 競合（例: すでに採掘中） |
 
 ## 🔧 設定
 
