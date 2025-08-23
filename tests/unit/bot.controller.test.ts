@@ -526,6 +526,28 @@ describe('BotController', () => {
       })).to.be.true;
     });
 
+    it('should return 503 when bot is not connected', async () => {
+      const botId = 'bot-123';
+
+      // 管理者権限のヘッダーを設定
+      req = {
+        params: { id: botId },
+        headers: {
+          'x-admin-role': 'true',
+          'x-user-id': 'admin-user'
+        }
+      };
+
+      sinon.stub(botService, 'startMining').rejects(new Error('BotNotConnected'));
+
+      await botController.startMining(req as Request, res as Response);
+
+      expect(statusStub.calledWith(503)).to.be.true;
+      expect(jsonStub.calledWith({
+        error: { code: 'B006', message: 'Bot not connected' }
+      })).to.be.true;
+    });
+
     it('should return 500 for other errors', async () => {
       const botId = 'bot-123';
 
