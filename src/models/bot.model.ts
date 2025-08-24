@@ -62,6 +62,19 @@ export default class Bot {
         };
       });
 
+      // End/error ハンドラを追加
+      this.client.on('end', () => {
+        // console.log(`Bot ${this.id} disconnected.`);
+        this.client = null;
+        this.miningEngine = null; // エンジンも破棄
+      });
+
+      this.client.on('error', (err) => {
+        // console.error(`Bot ${this.id} connection error:`, err);
+        this.client = null;
+        this.miningEngine = null;
+      });
+
     } catch (error) {
       // console.error('Failed to connect:', error);
       throw new Error('Failed to connect to Minecraft server');
