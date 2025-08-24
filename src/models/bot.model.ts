@@ -66,15 +66,22 @@ export default class Bot {
       this.client.on('end', () => {
         // console.log(`Bot ${this.id} disconnected.`);
         this.client = null;
-        this.miningEngine = null; // エンジンも破棄
+        // エンジン停止と破棄（タイマー等のクリーンアップ）
+        this.miningEngine?.stop?.();
+        this.miningEngine = null;
+        // 接続断時は作業状態を解除（再開時の 409 回避）
+        this.state = BotState.Idle;
       });
 
-      this.client.on('error', (err) => {
+      this.client.on('error', (_err) => {
         // console.error(`Bot ${this.id} connection error:`, err);
         this.client = null;
+        // エンジン停止と破棄（タイマー等のクリーンアップ）
+        this.miningEngine?.stop?.();
         this.miningEngine = null;
+        // エラー状態へ遷移（観測性のため Idle と区別）
+        this.state = BotState.Error;
       });
-
     } catch (error) {
       // console.error('Failed to connect:', error);
       throw new Error('Failed to connect to Minecraft server');
