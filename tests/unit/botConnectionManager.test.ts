@@ -211,14 +211,20 @@ describe('BotConnectionManager', () => {
 
       // Act
       connectionManager.keepAlive(1000);
-      
-      // Keep-alive interval * 2 + α の時間経過
-      clock.tick(2500);
+      // spawn を模擬して lastPingAt を設定
+      const spawnHandler = mockClient.on.getCalls().find(c => c.args[0] === 'spawn')?.args[1];
+      spawnHandler && spawnHandler();
+      // 2×interval を超えるまで進めてタイムアウト判定を誘発
+      clock.tick(2100);
+      // autoReconnect (初回: 1s 後) を進める
+      clock.tick(1000);
+      await new Promise(r => setImmediate(r));
 
-      // Assert - ping timeoutの検証は複雑なので、基本的な動作確認のみ
-      expect(connectionManager.isConnected()).to.be.true;
+      // Assert
+      expect(disconnectedSpy.calledWith('Ping timeout')).to.be.true;
+      // 初回 connect + 再接続で2回以上呼ばれているはず
+      expect(mockCreateClient.callCount).to.be.greaterThan(1);
     });
-  });
 
   describe('event handling', () => {
     it('should handle client end event and trigger autoReconnect', async () => {
