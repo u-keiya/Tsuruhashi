@@ -113,9 +113,15 @@ export class BotConnectionManager extends EventEmitter {
    * 自動再接続の開始
    * @param maxRetry 最大リトライ回数 (デフォルト: 5)
    */
-  async autoReconnect(maxRetry = 5): Promise<void> {
-    if (this.isReconnecting || this.retryCount >= maxRetry) {
+  autoReconnect(maxRetry = 5): void {
+    if (this.isReconnecting) {
       return;
+    }
+
+    // 既存の再接続スケジュールをキャンセル（手動 connect との競合回避）
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
     }
 
     this.isReconnecting = true;
@@ -136,6 +142,8 @@ export class BotConnectionManager extends EventEmitter {
         if (this.retryCount >= maxRetry) {
           this.isReconnecting = false;
           this.emit('reconnectFailed', error as Error);
+          // 次回の再接続要求をブロックしないようにカウンタをリセット
+          this.retryCount = 0;
         } else {
           // 次のリトライを開始
           this.isReconnecting = false;
