@@ -32,6 +32,16 @@ components:
         id: { type: string, format: uuid, example: "d6a7f..." }
         state: { type: string, enum: [Idle, Moving, Mining, ToolSwap] }
       required: [id, state]
+    BotHealthDTO:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [connected, disconnected]
+        lastSeenAt:
+          type: string
+          format: date-time
+      required: [status, lastSeenAt]
     PluginSpec:
       type: object
       properties:
@@ -202,3 +212,36 @@ paths:
               required: [name]
       responses:
         '202': { description: Accepted }
+
+  /bots/{botId}/health:
+    get:
+      summary: Get bot health status  #US-002-3
+      operationId: getBotHealth
+      tags: [Bot]
+      parameters:
+        - name: botId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Bot health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotHealthDTO'
+              examples:
+                connected:
+                  value: { status: connected, lastSeenAt: '2025-08-24T02:50:00Z' }
+                disconnected:
+                  value: { status: disconnected, lastSeenAt: '2025-08-24T02:45:30Z' }
+        '404':
+          description: Bot not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503':
+          description: Bot not connected
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }

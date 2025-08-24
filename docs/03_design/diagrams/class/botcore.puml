@@ -22,6 +22,16 @@ class Bot <<Entity>> {
   +...
 }
 
+class BotConnectionManager <<Service>> {
+  +connect()
+  +disconnect(reason)
+  +autoReconnect(maxRetry = 5)
+  +keepAlive(interval = 10)
+  +isConnected(): boolean
+  -retryCount: int
+  -lastPingAt: Timestamp
+}
+
 class Protocol <<Service>> {
   +connect()
   +send(packet)
@@ -112,6 +122,7 @@ class Coord <<ValueObject>> {
 '---------------------------
 Bot "1" o-- "1" Protocol
 Bot "1" o-- "1" PluginLoader
+Bot "1" o-- "1" BotConnectionManager : manages
 PluginLoader "1" *-- "0..*" Plugin
 Plugin "1" -- "1" Bot
 

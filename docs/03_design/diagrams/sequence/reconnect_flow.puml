@@ -1,0 +1,36 @@
+@startuml
+title #US-002-3 Bot 自動再接続・Keep-Aliveフロー
+
+actor Server
+participant Bot
+participant BotConnectionManager as BCM
+
+== サーバ切断時の自動再接続 ==
+Server -> Bot: Disconnect (timeout/idle)
+activate Bot
+Bot -> BCM: onDisconnect(event)
+activate BCM
+BCM -> BCM: schedule autoReconnect(backoff=1s, retryCount=0)
+loop 最大5回まで
+  BCM -> Server: connect()
+  alt success
+    BCM -> Bot: emit 'reconnected'
+    break
+  else fail & retryCount < 5
+    BCM -> BCM: backoff *= 2, retryCount++
+  else fail & retryCount >= 5
+    BCM -> Bot: emit 'reconnectFailed'
+    break
+  end
+end
+deactivate BCM
+
+== Keep-Alive ==
+... 10秒ごとに ...
+BCM -> Server: sendPing()
+Server --> BCM: pong/ACK
+alt 応答なし
+  BCM -> BCM: onPingTimeout() → disconnect & autoReconnect
+end
+
+@enduml
