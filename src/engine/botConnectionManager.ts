@@ -235,8 +235,8 @@ export class BotConnectionManager extends EventEmitter {
     this.client.on('close', () => {
       this.cleanup();
       this.emit('disconnected', 'Connection closed');
+      this.autoReconnect(5);
     });
-
     // Keep-Alive用のheartbeatイベント
     this.client.on('heartbeat', () => {
       this.lastPingAt = new Date();
